@@ -1,15 +1,12 @@
 #pragma once
-
 #include <JuceHeader.h>
 #include <vector>
+#include "gui.h"
 
-class MainComponent : public juce::AudioAppComponent,
-                      public juce::Button::Listener,
-                      public juce::Slider::Listener
-{
+class MainComponent : public juce::AudioAppComponent {
 public:
     MainComponent();
-    ~MainComponent() override;
+    ~MainComponent();
 
     // Audio
     void prepareToPlay(int samplesPerBlockExpected, double sampleRate) override;
@@ -17,27 +14,10 @@ public:
     void releaseResources() override;
 
     // GUI
-    void paint(juce::Graphics& g) override;
-    void resized() override;
-
-    // Event handlers
-    void buttonClicked(juce::Button* button) override;
-    void sliderValueChanged(juce::Slider* slider) override;
+    void paint(juce::Graphics& g);
+    void resized();
 
 private:
-    // Audio
-    juce::AudioFormatManager formatManager;
-    std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
-    juce::AudioTransportSource transportSource;
-
-    // GUI Controls
-    juce::TextButton loadButton { "Load Files" };
-    juce::TextButton restartButton { "Restart" };
-    juce::TextButton stopButton { "Stop" };
-    juce::Slider volumeSlider;
-
-    //void loadTrack(const juce::File& file);
-    std::unique_ptr<juce::FileChooser> fileChooser;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
+    PlayerGUI gui;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent);
 };
