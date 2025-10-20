@@ -6,27 +6,27 @@ class PlayerGUI : public juce::Component,
     public juce::Button::Listener,
     public juce::Slider::Listener {
 public:
-    PlayerGUI();
+    PlayerGUI(PlayerAudio &audio_player);
     ~PlayerGUI();
-
-    void prepareToPlay(int samplesPerBlockExpected, double sampleRate);
-    void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill);
-    void releaseResources();
 
     void paint(juce::Graphics& g);
     void resized();
     void buttonClicked(juce::Button* button);
     void sliderValueChanged(juce::Slider* slider);
-
 private:
-
+    PlayerAudio& player;
+        
+    // -------Buttons-------------
     juce::TextButton loadButton{ "Load Files" };
     juce::TextButton restartButton{ "Restart" };
     juce::TextButton stopButton{ "Stop" };
+    juce::TextButton muteButton{ "Mute" };
+    
+    //----------Sliders-------------
     juce::Slider volumeSlider;
+    juce::Slider speedSlider;
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    PlayerAudio player;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };

@@ -1,36 +1,29 @@
 #pragma once
 #include "gui.h"
 
-PlayerGUI::PlayerGUI() {
-
+PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player) {
     // Add buttons
-    for (auto* btn : { &loadButton, &restartButton , &stopButton })
+    for (auto* btn : { &loadButton, &restartButton , &stopButton, &muteButton })
     {
         btn->addListener(this);
         addAndMakeVisible(btn);
     }
 
-    // Volume slider
-    volumeSlider.setRange(0.0, 1.0, 0.01);
-    volumeSlider.setValue(0.5);
-    volumeSlider.addListener(this);
-    addAndMakeVisible(volumeSlider);
+    // Add sliders
+    std::vector<juce::Slider*> sliders = {
+        &volumeSlider,
+        &speedSlider
+    };
+    for (auto *slider : sliders) {
+        slider->setRange(0.0, 1.0, 0.01);
+        slider->setValue(0.5);
+        slider->addListener(this);
+        addAndMakeVisible(slider);
+    }
 
 }
 PlayerGUI::~PlayerGUI() {
 
-}
-
-void PlayerGUI::prepareToPlay(int samplesPerBlockExpected, double sampleRate) {
-    player.prepareToPlay(samplesPerBlockExpected, sampleRate);
-}
-
-void PlayerGUI::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) {
-    player.getNextAudioBlock(bufferToFill);
-}
-
-void PlayerGUI::releaseResources() {
-    player.releaseResources();
 }
 
 void PlayerGUI::paint(juce::Graphics& g) {
@@ -41,6 +34,7 @@ void PlayerGUI::resized() {
     loadButton.setBounds(20, y, 100, 40);
     restartButton.setBounds(140, y, 80, 40);
     stopButton.setBounds(240, y, 80, 40);
+    muteButton.setBounds(20, y+50, 80, 40);
     /*prevButton.setBounds(340, y, 80, 40);
     nextButton.setBounds(440, y, 80, 40);*/
 
@@ -80,6 +74,6 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
     }
 }
 void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
-    if (slider == &volumeSlider)
-        player.setGain((float)slider->getValue());
+    if (slider == &volumeSlider) player.setGain((float)slider->getValue());
+    //else if (slider == &speedSlider) 
 }

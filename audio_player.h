@@ -18,13 +18,15 @@ public:
     bool load(const juce::File& file);
     double getPosition() const;
     double getLength() const;
+    void mute();
 
 private:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
 
-
+    bool is_muted = 0;
+    float current_gain = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };
