@@ -35,7 +35,7 @@ void PlayerAudio::setPosition(double pos) {
 	transportSource.setPosition(pos);
 }
 void PlayerAudio::setGain(float gain) {
-    this->current_gain = gain;
+    if (!this->is_muted) this->current_gain = gain;
 	transportSource.setGain(gain);
 }
 void PlayerAudio::play() {
@@ -53,6 +53,9 @@ bool PlayerAudio::load(const juce::File& file) {
 
             // Create new reader source
             readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, true);
+
+            this->sample_rate = reader->sampleRate;
+            this->max_file_channels = (int)reader->numChannels;
 
             // Attach safely
             transportSource.setSource(readerSource.get(),
@@ -73,6 +76,19 @@ double PlayerAudio::getLength() const {
 }
 
 void PlayerAudio::mute() {
-    if (!this->is_muted) this->setGain(0);
+    is_muted ^= 1;
+    if (this->is_muted) this->setGain(0);
     else this->setGain(current_gain);
+}
+
+void PlayerAudio::change_playback_speed(float speed) {
+    float new_sample_rate = this->sample_rate / speed;
+    double current_position = this->transportSource.getCurrentPosition();
+    this->transportSource.setSource(readerSource.get(),
+        0,
+        nullptr,
+        new_sample_rate,
+        max_file_channels);
+    this->transportSource.setPosition(current_position);
+    this->transportSource.start();
 }
