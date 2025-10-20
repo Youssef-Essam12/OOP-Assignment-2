@@ -1,7 +1,8 @@
 #pragma once
 #include <JuceHeader.h>
 #include <vector>
-#include "gui.h"
+#include "PlayerGUI.h"
+#include "PlayerAudio.h"
 
 class MainComponent : public juce::AudioAppComponent {
 public:
@@ -17,7 +18,7 @@ public:
     void stop();
     void setPosition(double pos);
     void setGain(float gain);
-    void play();
+    void play_pause();
     bool load(const juce::File& file);
     double getPosition() const;
     double getLength() const;
