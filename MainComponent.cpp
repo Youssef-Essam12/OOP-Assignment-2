@@ -64,7 +64,7 @@ void MainComponent::paint(juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    gui.setBounds(20, 20, getWidth() - 40, 120);
+    gui.setBounds(20, 20, getWidth() - 40, 700);
 }
 
 

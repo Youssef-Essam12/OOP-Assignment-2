@@ -25,12 +25,13 @@ private:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
+    std::unique_ptr<juce::ResamplingAudioSource> resamplingSource;
 
     bool is_muted = 0;
     float current_gain = 0;
 
-    int max_file_channels;
-    float sample_rate = 0.0;
+    int max_file_channels = 0;
+    float sample_rate = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };
