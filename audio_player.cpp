@@ -82,13 +82,15 @@ void PlayerAudio::mute() {
 }
 
 void PlayerAudio::change_playback_speed(float speed) {
-    float new_sample_rate = this->sample_rate / speed;
+    float new_sample_rate = this->sample_rate * speed;
     double current_position = this->transportSource.getCurrentPosition();
+    bool was_playing = this->transportSource.isPlaying();
+
     this->transportSource.setSource(readerSource.get(),
         0,
         nullptr,
         new_sample_rate,
         max_file_channels);
     this->transportSource.setPosition(current_position);
-    this->transportSource.start();
+    if (was_playing) this->transportSource.start();
 }
