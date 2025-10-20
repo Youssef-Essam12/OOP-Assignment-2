@@ -34,11 +34,12 @@ void PlayerGUI::resized() {
     loadButton.setBounds(20, y, 100, 40);
     restartButton.setBounds(140, y, 80, 40);
     stopButton.setBounds(240, y, 80, 40);
-    muteButton.setBounds(20, y+50, 80, 40);
+    muteButton.setBounds(340, y, 80, 40);
     /*prevButton.setBounds(340, y, 80, 40);
     nextButton.setBounds(440, y, 80, 40);*/
 
-    volumeSlider.setBounds(20, 100, getWidth() - 40, 30);
+    volumeSlider.setBounds(20, y+40, getWidth() - 40, 30);
+    speedSlider.setBounds(20, y+80, getWidth() - 40, 30);
 }
 void PlayerGUI::buttonClicked(juce::Button* button) {
     if (button == &loadButton)
@@ -61,19 +62,24 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
                     player.load(file);
                 }
             });
-    }
+        }
 
-    if (button == &restartButton)
-    {
-        player.start();
-    }
+        if (button == &restartButton)
+        {
+            player.start();
+        }
 
-    if (button == &stopButton)
-    {
-        player.stop();
-    }
+        if (button == &stopButton)
+        {
+            player.stop();
+        }
+        if (button == &muteButton) {
+            player.mute();
+        }
 }
 void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
     if (slider == &volumeSlider) player.setGain((float)slider->getValue());
-    //else if (slider == &speedSlider) 
+    else if (slider == &speedSlider) {
+
+    }
 }

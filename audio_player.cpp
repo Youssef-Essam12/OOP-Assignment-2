@@ -35,7 +35,7 @@ void PlayerAudio::setPosition(double pos) {
 	transportSource.setPosition(pos);
 }
 void PlayerAudio::setGain(float gain) {
-    this->current_gain = gain;
+    if (!this->is_muted) this->current_gain = gain;
 	transportSource.setGain(gain);
 }
 void PlayerAudio::play() {
@@ -73,6 +73,7 @@ double PlayerAudio::getLength() const {
 }
 
 void PlayerAudio::mute() {
-    if (!this->is_muted) this->setGain(0);
+    is_muted ^= 1;
+    if (this->is_muted) this->setGain(0);
     else this->setGain(current_gain);
 }
