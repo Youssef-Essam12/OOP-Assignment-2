@@ -16,19 +16,21 @@ public:
     void sliderValueChanged(juce::Slider* slider);
 
     void timerCallback() override;
+    void updateTrackInfo();
+
 private:
     //-------Global variables-------
     PlayerAudio& player;
     
         
     // -------Buttons-------------
-    juce::TextButton loadButton{ "Load Files" };
+    juce::TextButton loadButton{ "Load Audio" };
     juce::TextButton restartButton{ "Restart" };
     juce::TextButton stopButton{ "Stop" };
     juce::TextButton muteButton{ "Mute" };
     juce::TextButton playPauseButton{ "Play/Pause" };
-    juce::TextButton toEnd{ "Play/Pause" };
-    juce::TextButton toStart{ "Play/Pause" };
+    juce::TextButton toEnd{ "To End" };
+    juce::TextButton toStart{ "To Start" };
     
     //----------Sliders-------------
     juce::Slider volumeSlider;
@@ -38,6 +40,8 @@ private:
     //----------Labels-------------
     juce::Label volumeLabel;
     juce::Label speedLabel;
+    juce::Label titleLabel;
+    juce::Label artistLabel;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 

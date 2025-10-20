@@ -50,8 +50,13 @@ void PlayerAudio::setGain(float gain) {
 }
 
 bool PlayerAudio::load(const juce::File& file) {
+
+
     if (file.existsAsFile())
     {
+        currentTitle = "";
+        currentArtist = "";
+
         if (auto* reader = formatManager.createReaderFor(file))
         {
             // 🔑 Disconnect old source first
@@ -70,6 +75,12 @@ bool PlayerAudio::load(const juce::File& file) {
                 0,
                 nullptr,
                 reader->sampleRate);
+            
+            const auto& metadata = reader->metadataValues;
+
+            currentTitle = metadata.getValue("TITLE", file.getFileNameWithoutExtension());
+            currentArtist = metadata.getValue("ARTIST", "Unknown Artist");
+
             transportSource.start();
             return true;
         }
@@ -100,4 +111,11 @@ void PlayerAudio::setSpeed(float speed) {
         max_file_channels);
     this->transportSource.setPosition(current_position);
     this->transportSource.start();
+}
+
+juce::String PlayerAudio::getTitle() const {
+    return currentTitle;
+}
+juce::String PlayerAudio::getArtist() const {
+    return currentArtist;
 }

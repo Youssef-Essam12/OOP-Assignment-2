@@ -3,7 +3,7 @@
 
 PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player) {
     // Add buttons
-    for (auto* btn : { &loadButton, &restartButton , &stopButton, &muteButton, &playPauseButton })
+    for (auto* btn : { &loadButton, &restartButton , &stopButton, &muteButton, &playPauseButton, &toEnd, &toStart })
     {
         btn->addListener(this);
         addAndMakeVisible(btn);
@@ -38,13 +38,22 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player) {
     // Add labels
     std::vector<juce::Label*> labels = {
         &volumeLabel,
-        &speedLabel
+        &speedLabel,
+		&titleLabel,
+		&artistLabel
     };
     for (auto* label : labels) {
         addAndMakeVisible(label);
     }
-	volumeLabel.setText("Volume", juce::dontSendNotification);
+	
+    volumeLabel.setText("Volume", juce::dontSendNotification);
     speedLabel.setText("Speed", juce::dontSendNotification);
+    
+    titleLabel.setFont(juce::Font(18.0f, juce::Font::bold));
+    titleLabel.setJustificationType(juce::Justification::centred);
+
+    artistLabel.setFont(juce::Font(14.0f));
+    artistLabel.setJustificationType(juce::Justification::centred);
 
 }
 PlayerGUI::~PlayerGUI() {
@@ -70,7 +79,8 @@ void PlayerGUI::resized() {
     restartButton.setBounds  (buttons_x + 1 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
     stopButton.setBounds     (buttons_x - 2 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
     muteButton.setBounds     (buttons_x + 2 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-	
+    toStart.setBounds(buttons_x - 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+    toEnd.setBounds(buttons_x + 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
     /*prevButton.setBounds(340, y, 80, 40);
     nextButton.setBounds(440, y, 80, 40);*/
 
@@ -88,6 +98,9 @@ void PlayerGUI::resized() {
     int label_margin = 20;
     volumeLabel.setBounds(volumeSlider.getX(), volumeSlider.getY(), label_w, label_h);
     speedLabel.setBounds(speedSlider.getX(), speedSlider.getY(), label_w, label_h);
+
+    titleLabel.setBounds(0, 50, getWidth(), label_h);
+    artistLabel.setBounds(0, 100, getWidth(), 20);
 }
 void PlayerGUI::buttonClicked(juce::Button* button) {
 
@@ -108,7 +121,9 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
             {
                 auto file = fc.getResult();
                 if (file.existsAsFile()) {
-                    player.load(file);
+                    if (player.load(file)) {
+                        updateTrackInfo();
+                    }
                 }
             });
     }
@@ -128,6 +143,15 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
     else if(button == &playPauseButton)
     {
         player.play_pause();
+	}
+    else if(button == &toStart)
+    {
+        player.setPosition(0.0);
+        player.start();
+    }
+    else if (button == &toEnd)
+    {
+        player.setPosition(player.getLength());
 	}
 
 }
@@ -150,6 +174,12 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
         }
     }
 
+}
+
+void PlayerGUI::updateTrackInfo()
+{
+    titleLabel.setText(player.getTitle(), juce::dontSendNotification);
+    artistLabel.setText(player.getArtist(), juce::dontSendNotification);
 }
 
 void PlayerGUI::timerCallback()

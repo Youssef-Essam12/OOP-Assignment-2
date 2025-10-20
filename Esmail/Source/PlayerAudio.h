@@ -18,13 +18,17 @@ public:
     void play();
     void mute();
 
+    // setter methods
     void setSpeed(float speed);
     void setPosition(double pos);
     void setGain(float gain);
+
+    // getter methods
     double getPosition() const;
     double getLength() const;
     
-
+    juce::String getTitle() const;
+    juce::String getArtist() const;
 
 private:
     juce::AudioFormatManager formatManager;
@@ -37,6 +41,9 @@ private:
 
     int max_file_channels;
     float sample_rate = 0.0;
+
+    juce::String currentTitle;
+    juce::String currentArtist;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };
