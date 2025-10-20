@@ -19,6 +19,7 @@ public:
     double getPosition() const;
     double getLength() const;
     void mute();
+    void change_playback_speed(float speed);
 
 private:
     juce::AudioFormatManager formatManager;
@@ -27,6 +28,9 @@ private:
 
     bool is_muted = 0;
     float current_gain = 0;
+
+    int max_file_channels;
+    float sample_rate = 0.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };

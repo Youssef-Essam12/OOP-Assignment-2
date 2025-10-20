@@ -80,6 +80,6 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
 void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
     if (slider == &volumeSlider) player.setGain((float)slider->getValue());
     else if (slider == &speedSlider) {
-
+        player.change_playback_speed((float)slider->getValue());
     }
 }
