@@ -3,7 +3,7 @@
 
 MainComponent::MainComponent() : player(), gui(player) {
     addAndMakeVisible(gui);
-    setSize(500, 250);
+    setSize(500, 1080);
     setAudioChannels(0, 2);
 }
 
@@ -41,9 +41,7 @@ void MainComponent::setPosition(double pos) {
 void MainComponent::setGain(float gain) {
     player.setGain(gain);
 }
-void MainComponent::play() {
-    player.play();
-}
+
 bool MainComponent::load(const juce::File& file) {
     return player.load(file);
 }
@@ -57,6 +55,10 @@ void MainComponent::mute() {
     player.mute();
 }
 
+void MainComponent::play_pause() {
+    player.play_pause();
+}
+
 void MainComponent::paint(juce::Graphics& g)
 {
     gui.paint(g);
@@ -64,7 +66,7 @@ void MainComponent::paint(juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    gui.setBounds(20, 20, getWidth() - 40, 700);
+    gui.setBounds(0, 0, getWidth(), getHeight());
 }
 
 
