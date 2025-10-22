@@ -26,7 +26,7 @@ public:
     void play_pause();
     void mute();
     void loop();
-    void forward_backward(bool forward);
+    void move_by(double displacement);
     bool playFile(int index);
 
     // setter methods
@@ -62,7 +62,7 @@ private:
 
     bool is_looping = 0;
 
-	double original_audio_length_in_seconds = 0.0;
+    std::vector<double> original_audio_length_in_seconds;
 
     std::vector<juce::File> audioFiles;
     std::vector<MetaDataWraper> audioFileMetadata;

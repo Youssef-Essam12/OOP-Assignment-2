@@ -44,9 +44,6 @@ void PlayerAudio::play_pause() {
     isPaused = !isPaused;
 }
 
-void PlayerAudio::setPosition(double pos) {
-	transportSource.setPosition(pos);
-}
 
 void PlayerAudio::setGain(float gain) {
     if (!this->is_muted) this->current_gain = gain;
@@ -96,7 +93,7 @@ bool PlayerAudio::playFile(int index) {
 
         currently_loaded_audioFile_index = index;
 
-        this->original_audio_length_in_seconds = this->getLength();
+        this->original_audio_length_in_seconds.emplace_back(this->getLength());
 
         transportSource.start();
 
@@ -120,7 +117,9 @@ juce::String PlayerAudio::getArtist() const {
 }
 
 double PlayerAudio::getOriginalLength() const {
-    return original_audio_length_in_seconds;
+    if(this->isWokring())
+        return this->original_audio_length_in_seconds[currently_loaded_audioFile_index];
+    return 1.0;
 }
 
 void PlayerAudio::mute() {
@@ -129,19 +128,26 @@ void PlayerAudio::mute() {
     else this->setGain(current_gain);
 }
 
-void PlayerAudio::forward_backward(bool forward) {
-    double new_position = this->getPosition();
-    if (forward) {
-        new_position = std::min(new_position + 10, this->getLength());
-    }
-    else {
-        new_position = std::max(0.0, new_position - 10);
-    }
+void PlayerAudio::setPosition(double pos) {
+    transportSource.setPosition(pos);
+}
+
+void PlayerAudio::move_by(double displacement) {
+    
+    double org_position = this->getPosition() / this->getLength() * this->getOriginalLength();
+
+    org_position += displacement;
+    org_position = std::min(org_position, this->getLength());
+    org_position = std::max(0.0, org_position);
+	
+    double new_position = org_position / this->getOriginalLength() * this->getLength();
+
     this->transportSource.setPosition(new_position);
 }
 
 void PlayerAudio::setSpeed(float speed) {
     float new_sample_rate = this->sample_rate * speed;
+
     double position_ratio = this->transportSource.getCurrentPosition() / this->getLength();
     
     this->transportSource.setSource(readerSource.get(),

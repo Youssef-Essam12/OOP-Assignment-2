@@ -303,10 +303,10 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
         player.setPosition(player.getLength());
 	}
     else if (button == &forward) {
-        player.forward_backward(1);
+        player.move_by(10);
     }
     else if (button == &backward) {
-        player.forward_backward(0);
+        player.move_by(-10);
     }
     else if (button == &loopButton)
     {
@@ -378,6 +378,9 @@ void PlayerGUI::timerCallback()
 
         positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
         positionSlider.setValue(ratio * player.getPosition(), juce::dontSendNotification);
+    }
+    else {
+        positionSlider.setValue(0.0, juce::dontSendNotification);
     }
     repaint();
 }
