@@ -179,18 +179,22 @@ void PlayerGUI::resized() {
 
     int distance_factor = 3;
 
-    playPauseButton.setBounds(buttons_x                                      , buttons_y, buttons_w, buttons_h);
-    loadButton.setBounds     (buttons_x - 1 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    restartButton.setBounds  (buttons_x + 1 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    stopButton.setBounds     (buttons_x - 2 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    muteButton.setBounds     (buttons_x + 2 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    toStart.setBounds        (buttons_x - 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    toEnd.setBounds          (buttons_x + 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    loopButton.setBounds     (buttons_x - 4 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    forward.setBounds        (buttons_x + 4 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    backward.setBounds       (buttons_x - 5 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-	playlist_menu.setBounds  (buttons_x + 5 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-
+    // Place buttons
+    {
+        int i = 1;
+        for (auto* btn : { &playPauseButton, 
+                           &forward, &backward, 
+                           & toEnd, &toStart,
+                           &muteButton,&restartButton, 
+                           &stopButton, &loopButton,
+                           &playlist_menu,& loadButton })
+        {
+            int factor = (i % 2 == 0 ? 1 : -1);
+            btn->setBounds(buttons_x + factor * (i / 2) * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+            i++;
+        }
+    }
+    
     int slider_w = getWidth() * 0.75;
 	int slider_h = 30;  
     int slider_x = (getWidth() - slider_w) >> 1;
