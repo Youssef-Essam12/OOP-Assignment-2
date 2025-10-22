@@ -44,6 +44,9 @@ public:
     juce::String getArtist() const;
     const juce::File& getPlaylistFile(int index) const;
 
+    // Warnings
+    bool isFileAlreadyLoaded(const juce::File& file);
+
 private:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;

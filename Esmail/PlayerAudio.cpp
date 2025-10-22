@@ -167,3 +167,12 @@ const juce::File& PlayerAudio::getPlaylistFile(int index) const {
 bool PlayerAudio::isWokring() const {
     return currently_loaded_audioFile_index != -1;
 }
+
+bool PlayerAudio::isFileAlreadyLoaded(const juce::File& file) {
+    for (const auto& f : audioFiles) {
+        if (f == file) {
+            return true;
+        }
+    }
+	return false;
+}

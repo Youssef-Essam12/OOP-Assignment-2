@@ -80,7 +80,8 @@ thumbnail(512, formatManager, thumbnailCache) {
 
     artistLabel.setFont(juce::Font(14.0f));
     artistLabel.setJustificationType(juce::Justification::centred);
-
+    
+    
 }
 
 PlayerGUI::~PlayerGUI() {
@@ -126,8 +127,7 @@ void PlayerGUI::display_playlist_menu() {
     playlist_componenet_visible = !playlist_componenet_visible;
 
     juce::ComponentAnimator& animator = juce::Desktop::getInstance().getAnimator();
-    int panelWidth = getWidth() / 3;
-    int panelHeight = getHeight();
+    
 
     juce::Rectangle<int> targetBounds;
 
@@ -212,8 +212,8 @@ void PlayerGUI::resized() {
     int toggleButtonW = 100;
     int toggleButtonH = 40;
 
-    int panelWidth = getWidth() / 3;
-    int panelHeight = getHeight();
+    panelWidth = getWidth() / 3;
+    panelHeight = getHeight() / 3;
 
     if (playlist_componenet_visible)
     {
@@ -254,7 +254,18 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
             [this](const juce::FileChooser& fc)
             {
                 auto file = fc.getResult();
-                if (file.existsAsFile()) {
+                if (player.isFileAlreadyLoaded(file))
+                {
+                    juce::AlertWindow::showMessageBoxAsync(
+                        juce::AlertWindow::WarningIcon,     // Icon type
+                        "File Already Loaded",              // Window title
+                        "The file '" + file.getFileName()   // Message
+                        + "' is already in the playlist.",
+                        "OK"                                // Button text
+                    );
+                }
+                else
+                {
                     if (player.load(file)) {
                         add_playlist_entry(file);
                     }
