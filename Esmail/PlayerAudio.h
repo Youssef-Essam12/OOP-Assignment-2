@@ -1,6 +1,15 @@
 #pragma once
 #include <JuceHeader.h>
 
+struct MetaDataWraper {
+    juce::String title;
+    juce::String artist;
+	MetaDataWraper(){
+        this->title  = "";
+        this->artist = "";
+    }
+};
+
 class PlayerAudio {
 public:
     PlayerAudio();
@@ -15,10 +24,10 @@ public:
     void start();
     void stop();
     void play_pause();
-    void play();
     void mute();
     void loop();
     void forward_backward(bool forward);
+    bool playFile(int index);
 
     // setter methods
     void setSpeed(float speed);
@@ -29,15 +38,18 @@ public:
     double getPosition() const;
     double getLength() const;
 	double getOriginalLength() const;
+    bool   isWokring() const;
     
     juce::String getTitle() const;
     juce::String getArtist() const;
+    const juce::File& getPlaylistFile(int index) const;
 
 private:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
 
+    int currently_loaded_audioFile_index = -1;
     bool is_muted = 0;
     bool isPaused = 0;
     float current_gain = 0;
@@ -49,8 +61,10 @@ private:
 
 	double original_audio_length_in_seconds = 0.0;
 
-    juce::String currentTitle;
-    juce::String currentArtist;
+    std::vector<juce::File> audioFiles;
+    std::vector<MetaDataWraper> audioFileMetadata;
+    std::vector<std::unique_ptr<juce::AudioFormatReader>> audioReaders;
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };

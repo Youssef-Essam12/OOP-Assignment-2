@@ -54,43 +54,53 @@ void PlayerAudio::setGain(float gain) {
 }
 
 bool PlayerAudio::load(const juce::File& file) {
-
-
     if (file.existsAsFile())
     {
-        currentTitle = "";
-        currentArtist = "";
-
         if (auto* reader = formatManager.createReaderFor(file))
         {
-            // 🔑 Disconnect old source first
-            transportSource.stop();
-            transportSource.setSource(nullptr);
-            readerSource.reset();
+            audioFiles.push_back(file);
+            audioFileMetadata.emplace_back(MetaDataWraper());
+            auto& [title, artist] = audioFileMetadata.back();
 
-            // Create new reader source
-            readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, true);
-
-            this->sample_rate = reader->sampleRate;
-            this->max_file_channels = (int)reader->numChannels;
-
-            // Attach safely
-            transportSource.setSource(readerSource.get(),
-                0,
-                nullptr,
-                reader->sampleRate);
-            
             const auto& metadata = reader->metadataValues;
+            title = metadata.getValue("TITLE", file.getFileNameWithoutExtension());
+            artist = metadata.getValue("ARTIST", "Unknown Artist");
 
-            currentTitle = metadata.getValue("TITLE", file.getFileNameWithoutExtension());
-            currentArtist = metadata.getValue("ARTIST", "Unknown Artist");
+            audioReaders.push_back(std::unique_ptr<juce::AudioFormatReader>(reader));
 
-            transportSource.start();
-
-            this->original_audio_length_in_seconds = this->getLength();
-            
             return true;
         }
+    }
+    return false;
+}
+
+bool PlayerAudio::playFile(int index) {
+
+    if (index >= 0 && index < audioReaders.size()) {
+
+        juce::AudioFormatReader* reader = audioReaders[index].get();
+
+        transportSource.stop();
+        transportSource.setSource(nullptr);
+        readerSource.reset(); 
+
+        readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, false);
+
+        this->sample_rate = reader->sampleRate;
+        this->max_file_channels = (int)reader->numChannels;
+
+        transportSource.setSource(readerSource.get(),
+            0,
+            nullptr,
+            reader->sampleRate); 
+
+        currently_loaded_audioFile_index = index;
+
+        this->original_audio_length_in_seconds = this->getLength();
+
+        transportSource.start();
+
+        return true;
     }
     return false;
 }
@@ -103,10 +113,10 @@ double PlayerAudio::getLength() const {
 }
 
 juce::String PlayerAudio::getTitle() const {
-    return currentTitle;
+    return audioFileMetadata[currently_loaded_audioFile_index].title;
 }
 juce::String PlayerAudio::getArtist() const {
-    return currentArtist;
+    return audioFileMetadata[currently_loaded_audioFile_index].artist;
 }
 
 double PlayerAudio::getOriginalLength() const {
@@ -149,3 +159,11 @@ void PlayerAudio::loop() {
     is_looping = !is_looping;
 }
 
+const juce::File& PlayerAudio::getPlaylistFile(int index) const {
+    return this->audioFiles[index];
+
+}
+
+bool PlayerAudio::isWokring() const {
+    return currently_loaded_audioFile_index != -1;
+}

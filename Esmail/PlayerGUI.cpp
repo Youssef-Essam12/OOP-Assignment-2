@@ -5,10 +5,16 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player),
 thumbnailCache(5),
 thumbnail(512, formatManager, thumbnailCache) {
 
+
+    addAndMakeVisible(playlist_component);
     formatManager.registerBasicFormats();
     thumbnail.addChangeListener(this);
+    playlist_component.setAlwaysOnTop(true);
     // Add buttons
-    for (auto* btn : { &loadButton, &restartButton , &stopButton, &muteButton, &playPauseButton, &toEnd, &toStart, &backward,  &forward, &loopButton })
+    for (auto* btn : { &loadButton, &restartButton  , &stopButton, 
+                       &muteButton, &playPauseButton, &toEnd, 
+                       &toStart   , &backward       , &forward, 
+                       &loopButton, &playlist_menu })
     {
         btn->addListener(this);
         addAndMakeVisible(btn);
@@ -76,8 +82,15 @@ thumbnail(512, formatManager, thumbnailCache) {
     artistLabel.setJustificationType(juce::Justification::centred);
 
 }
+
 PlayerGUI::~PlayerGUI() {
     stopTimer();
+
+    // Clean up dynamically created playlist entry buttons
+    for (auto* btn : playlist_buttons) {
+        delete btn;
+    }
+    playlist_buttons.clear();
 }
 
 void PlayerGUI::paint(juce::Graphics& g) {
@@ -107,12 +120,60 @@ void PlayerGUI::paint(juce::Graphics& g) {
         }
     }
 }
+
+void PlayerGUI::display_playlist_menu() {
+
+    playlist_componenet_visible = !playlist_componenet_visible;
+
+    juce::ComponentAnimator& animator = juce::Desktop::getInstance().getAnimator();
+    int panelWidth = getWidth() / 3;
+    int panelHeight = getHeight();
+
+    juce::Rectangle<int> targetBounds;
+
+    if (playlist_componenet_visible)
+    {
+        // Target is ON-screen
+        targetBounds = juce::Rectangle<int>(getWidth() - panelWidth, 0, panelWidth, panelHeight);
+    }
+    else
+    {
+        // Target is OFF-screen (to the right)
+        targetBounds = juce::Rectangle<int>(getWidth(), 0, panelWidth, panelHeight);
+    }
+
+    // Animate the component to the target bounds over 300ms
+    animator.animateComponent(
+        &playlist_component,  // Component to animate
+        targetBounds,         // Target position and size
+        1.0f,                 // Target opacity (1.0 = fully visible)
+        300,                  // Time in milliseconds
+        false,                // Use an ease-out curve
+        0.0,                  // Start velocity
+        0.0                   // End velocity
+    );
+}
+
+void PlayerGUI::add_playlist_entry(const juce::File& file) {
+    juce::String fileName = file.getFileNameWithoutExtension();
+
+    auto* newEntry = new juce::TextButton(fileName);
+
+    newEntry->setButtonText(fileName);
+    newEntry->addListener(this); 
+
+    playlist_component.addAndMakeVisible(newEntry);
+    playlist_buttons.push_back(newEntry);
+
+    resized();
+}
+
 void PlayerGUI::resized() {
  
     int buttons_w = 100;
     int buttons_h = 50;
 
-    int button_margin = buttons_w >> 1;
+    int button_margin = buttons_w * 0.40;
     int buttons_x = (getWidth() - buttons_w) >> 1;
     int buttons_y = getHeight() - 1.5 * button_margin;
 
@@ -127,8 +188,8 @@ void PlayerGUI::resized() {
     toEnd.setBounds          (buttons_x + 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
     loopButton.setBounds     (buttons_x - 4 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
     forward.setBounds        (buttons_x + 4 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    backward.setBounds(buttons_x - 5 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-
+    backward.setBounds       (buttons_x - 5 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+	playlist_menu.setBounds  (buttons_x + 5 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
 
     int slider_w = getWidth() * 0.75;
 	int slider_h = 30;  
@@ -147,6 +208,33 @@ void PlayerGUI::resized() {
 
     titleLabel.setBounds(0, 50, getWidth(), label_h);
     artistLabel.setBounds(0, 100, getWidth(), 20);
+
+    int toggleButtonW = 100;
+    int toggleButtonH = 40;
+
+    int panelWidth = getWidth() / 3;
+    int panelHeight = getHeight();
+
+    if (playlist_componenet_visible)
+    {
+        playlist_component.setBounds(getWidth() - panelWidth, 0, panelWidth, panelHeight);
+    }
+    else
+    {
+        playlist_component.setBounds(getWidth(), 0, panelWidth, panelHeight);
+    }
+
+    int buttonMargin = 10;
+    int buttonHeight = 30;
+    int startY = 10; // Start at the top of the panel (or below the toggle button if it's inside the panel)
+
+    // Layout the dynamically created buttons inside the 'playlist_component'
+    for (int i = 0; i < playlist_buttons.size(); ++i) {
+        playlist_buttons[i]->setBounds(buttonMargin,
+            startY + i * (buttonHeight + buttonMargin),
+            panelWidth - 2 * buttonMargin,
+            buttonHeight);
+    }
 }
 void PlayerGUI::buttonClicked(juce::Button* button) {
 
@@ -168,9 +256,8 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
                 auto file = fc.getResult();
                 if (file.existsAsFile()) {
                     if (player.load(file)) {
-                        updateTrackInfo();
+                        add_playlist_entry(file);
                     }
-                    thumbnail.setSource(new juce::FileInputSource(file));
                 }
             });
     }
@@ -210,6 +297,26 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
     {
         player.loop();
     }
+    else if(button == & playlist_menu)
+    {
+        display_playlist_menu();
+    }
+    else // play list buttons
+    {
+        // Check if the clicked button is one of the playlist entries
+        for (size_t i = 0; i < playlist_buttons.size(); ++i) {
+            if (button == playlist_buttons[i]) {
+                const juce::File& file = player.getPlaylistFile(i);
+                if (file.existsAsFile()) {
+                    if (player.playFile(i)) {
+                        updateTrackInfo();
+                    }
+                    thumbnail.setSource(new juce::FileInputSource(file));
+                }
+                break;
+            }
+        }
+	}
 }
 
 void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
@@ -234,8 +341,10 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
 
 void PlayerGUI::updateTrackInfo()
 {
-    titleLabel.setText(player.getTitle(), juce::dontSendNotification);
-    artistLabel.setText(player.getArtist(), juce::dontSendNotification);
+    if (player.isWokring()) {
+        titleLabel.setText(player.getTitle(), juce::dontSendNotification);
+        artistLabel.setText(player.getArtist(), juce::dontSendNotification);
+    }
 }
 
 void PlayerGUI::changeListenerCallback(juce::ChangeBroadcaster* source) {
