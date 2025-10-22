@@ -1,0 +1,53 @@
+#pragma once
+#include <JuceHeader.h>
+
+class PlayerAudio {
+public:
+    PlayerAudio();
+    ~PlayerAudio();
+
+
+    void prepareToPlay(int samplesPerBlockExpected, double sampleRate);
+    void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill);
+    void releaseResources();
+    bool load(const juce::File& file);
+
+    void start();
+    void stop();
+    void play_pause();
+    void play();
+    void mute();
+    void loop();
+    void forward_backward(bool forward);
+
+    // setter methods
+    void setSpeed(float speed);
+    void setPosition(double pos);
+    void setGain(float gain);
+
+    // getter methods
+    double getPosition() const;
+    double getLength() const;
+    
+    juce::String getTitle() const;
+    juce::String getArtist() const;
+
+private:
+    juce::AudioFormatManager formatManager;
+    std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
+    juce::AudioTransportSource transportSource;
+
+    bool is_muted = 0;
+    bool isPaused = 0;
+    float current_gain = 0;
+
+    int max_file_channels = 0;
+    float sample_rate = 0.0;
+
+    bool is_looping = 0;
+
+    juce::String currentTitle;
+    juce::String currentArtist;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
+};
