@@ -14,7 +14,11 @@ void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate) 
 }
 
 void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) {
-	transportSource.getNextAudioBlock(bufferToFill);
+    transportSource.getNextAudioBlock(bufferToFill);
+    if (is_looping && transportSource.getCurrentPosition() >= transportSource.getLengthInSeconds()) {
+        transportSource.setPosition(0.0);
+        transportSource.start();
+    }
 }
 
 void PlayerAudio::releaseResources() {
@@ -82,6 +86,9 @@ bool PlayerAudio::load(const juce::File& file) {
             currentArtist = metadata.getValue("ARTIST", "Unknown Artist");
 
             transportSource.start();
+
+            this->original_audio_length_in_seconds = this->getLength();
+            
             return true;
         }
     }
@@ -95,27 +102,50 @@ double PlayerAudio::getLength() const {
 	return transportSource.getLengthInSeconds();
 }
 
-void PlayerAudio::mute() {
-    is_muted = !is_muted;
-    if (this->is_muted) this->setGain(0);
-    else this->setGain(current_gain);
-}
-
-void PlayerAudio::setSpeed(float speed) {
-    float new_sample_rate = this->sample_rate * speed;
-    double current_position = this->transportSource.getCurrentPosition();
-    this->transportSource.setSource(readerSource.get(),
-        0,
-        nullptr,
-        new_sample_rate,
-        max_file_channels);
-    this->transportSource.setPosition(current_position);
-    this->transportSource.start();
-}
-
 juce::String PlayerAudio::getTitle() const {
     return currentTitle;
 }
 juce::String PlayerAudio::getArtist() const {
     return currentArtist;
 }
+
+double PlayerAudio::getOriginalLength() const {
+    return original_audio_length_in_seconds;
+}
+
+void PlayerAudio::mute() {
+    is_muted = !is_muted;
+    if (this->is_muted) this->setGain(0);
+    else this->setGain(current_gain);
+}
+
+void PlayerAudio::forward_backward(bool forward) {
+    double new_position = this->getPosition();
+    if (forward) {
+        new_position = std::min(new_position + 10, this->getLength());
+    }
+    else {
+        new_position = std::max(0.0, new_position - 10);
+    }
+    this->transportSource.setPosition(new_position);
+}
+
+void PlayerAudio::setSpeed(float speed) {
+    float new_sample_rate = this->sample_rate * speed;
+    double position_ratio = this->transportSource.getCurrentPosition() / this->getLength();
+    
+    this->transportSource.setSource(readerSource.get(),
+        0,
+        nullptr,
+        new_sample_rate,
+        max_file_channels);
+    this->transportSource.setPosition(position_ratio * this->getLength());
+
+    if (!isPaused) this->transportSource.start();
+}
+
+
+void PlayerAudio::loop() {
+    is_looping = !is_looping;
+}
+

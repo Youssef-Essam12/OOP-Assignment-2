@@ -23,6 +23,7 @@ public:
     double getPosition() const;
     double getLength() const;
     void mute();
+    void loop();
 
     // GUI
     void paint(juce::Graphics& g);

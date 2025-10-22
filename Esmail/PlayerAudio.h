@@ -17,6 +17,8 @@ public:
     void play_pause();
     void play();
     void mute();
+    void loop();
+    void forward_backward(bool forward);
 
     // setter methods
     void setSpeed(float speed);
@@ -26,6 +28,7 @@ public:
     // getter methods
     double getPosition() const;
     double getLength() const;
+	double getOriginalLength() const;
     
     juce::String getTitle() const;
     juce::String getArtist() const;
@@ -39,8 +42,12 @@ private:
     bool isPaused = 0;
     float current_gain = 0;
 
-    int max_file_channels;
+    int max_file_channels = 0;
     float sample_rate = 0.0;
+
+    bool is_looping = 0;
+
+	double original_audio_length_in_seconds = 0.0;
 
     juce::String currentTitle;
     juce::String currentArtist;

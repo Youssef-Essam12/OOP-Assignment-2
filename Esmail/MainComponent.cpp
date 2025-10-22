@@ -69,4 +69,6 @@ void MainComponent::resized()
     gui.setBounds(0, 0, getWidth(), getHeight());
 }
 
-
+void MainComponent::loop() {
+    player.loop();
+}

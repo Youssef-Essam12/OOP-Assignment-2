@@ -1,9 +1,14 @@
 #pragma once
 #include "PlayerGUI.h"
 
-PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player) {
+PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player),
+thumbnailCache(5),
+thumbnail(512, formatManager, thumbnailCache) {
+
+    formatManager.registerBasicFormats();
+    thumbnail.addChangeListener(this);
     // Add buttons
-    for (auto* btn : { &loadButton, &restartButton , &stopButton, &muteButton, &playPauseButton, &toEnd, &toStart })
+    for (auto* btn : { &loadButton, &restartButton , &stopButton, &muteButton, &playPauseButton, &toEnd, &toStart, &backward,  &forward, &loopButton })
     {
         btn->addListener(this);
         addAndMakeVisible(btn);
@@ -27,6 +32,21 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player) {
 
         slider->setTextValueSuffix(" %");
     }
+
+    positionSlider.textFromValueFunction = [&](double value) {
+        std::string result = "";
+
+		int minutes = static_cast<int>(value) / 60;
+		int seconds = value - (minutes * 60);
+		
+        std::string seconds_string = std::to_string(seconds);
+		if (seconds < 10) seconds_string = "0" + seconds_string;
+
+        std::string minutes_string = std::to_string(minutes);
+        if (minutes < 10) minutes_string = "0" + minutes_string;
+        
+        return minutes_string + ":" + seconds_string ;
+	};
 
     speedSlider.setRange(30, 200, 1);
     speedSlider.setValue(100);
@@ -57,11 +77,35 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player) {
 
 }
 PlayerGUI::~PlayerGUI() {
-
+    stopTimer();
 }
 
 void PlayerGUI::paint(juce::Graphics& g) {
     g.fillAll(juce::Colours::darkgrey);
+
+    //player.setSpeed(150);
+    auto waveform = juce::Rectangle<int>(20, 200, getWidth() - 40, 300);
+
+    g.setColour(juce::Colours::lightgrey);
+    g.drawRect(waveform);
+
+    if (thumbnail.getNumChannels() == 0) {
+        g.setColour(juce::Colours::white);
+        g.drawFittedText("No Audio Loaded", waveform, juce::Justification::centred, 1);
+    }
+    else {
+        g.setColour(juce::Colours::hotpink);
+        thumbnail.drawChannels(g, waveform, 0.0, thumbnail.getTotalLength(), 1.0f);
+
+        double pos = player.getPosition();
+        double len = player.getLength();
+
+        if (len > 0) {
+            float current_pos = (float)(waveform.getX() + (pos / len) * waveform.getWidth());
+            g.setColour(juce::Colours::red);
+            g.drawLine(current_pos, (float)waveform.getY(), current_pos, (float)waveform.getBottom(), 2.0f);
+        }
+    }
 }
 void PlayerGUI::resized() {
  
@@ -79,10 +123,12 @@ void PlayerGUI::resized() {
     restartButton.setBounds  (buttons_x + 1 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
     stopButton.setBounds     (buttons_x - 2 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
     muteButton.setBounds     (buttons_x + 2 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    toStart.setBounds(buttons_x - 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    toEnd.setBounds(buttons_x + 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-    /*prevButton.setBounds(340, y, 80, 40);
-    nextButton.setBounds(440, y, 80, 40);*/
+    toStart.setBounds        (buttons_x - 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+    toEnd.setBounds          (buttons_x + 3 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+    loopButton.setBounds     (buttons_x - 4 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+    forward.setBounds        (buttons_x + 4 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+    backward.setBounds(buttons_x - 5 * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
+
 
     int slider_w = getWidth() * 0.75;
 	int slider_h = 30;  
@@ -124,6 +170,7 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
                     if (player.load(file)) {
                         updateTrackInfo();
                     }
+                    thumbnail.setSource(new juce::FileInputSource(file));
                 }
             });
     }
@@ -153,7 +200,16 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
     {
         player.setPosition(player.getLength());
 	}
-
+    else if (button == &forward) {
+        player.forward_backward(1);
+    }
+    else if (button == &backward) {
+        player.forward_backward(0);
+    }
+    else if (button == &loopButton)
+    {
+        player.loop();
+    }
 }
 
 void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
@@ -182,16 +238,22 @@ void PlayerGUI::updateTrackInfo()
     artistLabel.setText(player.getArtist(), juce::dontSendNotification);
 }
 
+void PlayerGUI::changeListenerCallback(juce::ChangeBroadcaster* source) {
+    if (source == &thumbnail) {
+        repaint();
+    }
+}
+
 void PlayerGUI::timerCallback()
 {
-    double lengthInSeconds = player.getLength();
-
-    if (lengthInSeconds > 0)
+    double truelengthInSeconds = player.getOriginalLength();
+         
+    if (truelengthInSeconds > 0)
     {
-        double currentPosition = player.getPosition();
+	    double ratio = truelengthInSeconds / player.getLength();
 
-        positionSlider.setRange(0.0, lengthInSeconds, juce::dontSendNotification);
-
-        positionSlider.setValue(currentPosition, juce::dontSendNotification);
+        positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
+        positionSlider.setValue(ratio * player.getPosition(), juce::dontSendNotification);
     }
+    repaint();
 }
