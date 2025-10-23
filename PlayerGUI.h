@@ -4,11 +4,11 @@
 
 class PlayerGUI : public juce::Component,
     public juce::Button::Listener,
-    public juce::Slider::Listener, 
+    public juce::Slider::Listener,
     public juce::ChangeListener,
     public juce::Timer {
 public:
-    PlayerGUI(PlayerAudio &audio_player);
+    PlayerGUI(PlayerAudio& audio_player);
     ~PlayerGUI();
 
     void paint(juce::Graphics& g);
@@ -20,12 +20,23 @@ public:
     void updateTrackInfo();
 
     void changeListenerCallback(juce::ChangeBroadcaster* source);
+    void display_playlist_menu();
+    void add_playlist_entry(const juce::File& file);
+    void delete_button(int index);
+
     //void wave_form(juce::Graphics& g);
 private:
     //-------Global variables-------
     PlayerAudio& player;
-    
-        
+    bool playlist_componenet_visible = false;
+    std::vector<juce::TextButton*> playlist_buttons;
+    std::vector<juce::TextButton*> playlist_delete_buttons;
+    std::vector<std::string> playlist_paths;
+    juce::Component playlist_component;
+
+    int current_audio_playing = -1;
+
+
     // -------Buttons-------------
     juce::TextButton loadButton{ "Load Audio" };
     juce::TextButton restartButton{ "Restart" };
@@ -37,7 +48,8 @@ private:
     juce::TextButton loopButton{ "Loop" };
     juce::TextButton backward{ "-10s" };
     juce::TextButton forward{ "+10s" };
-    
+    juce::TextButton playlist_menu{ "Playlist" };
+
     //----------Sliders-------------
     juce::Slider volumeSlider;
     juce::Slider speedSlider;
@@ -54,7 +66,18 @@ private:
     juce::AudioFormatManager formatManager;
     juce::AudioThumbnailCache thumbnailCache;
     juce::AudioThumbnail thumbnail;
+    //------------Sizes-----------
+    int panelWidth;
+    int panelHeight;
 
-    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };
+
+/*
+*   Play list to do list:
+    Add button for playlist menu
+    On playlist button press -> display menu -> implement display menu function
+    On load button press -> open file chooser -> implement add entry to playlist function
+    Implement delete button to remove loaded images
+
+*/
