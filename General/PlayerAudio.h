@@ -35,11 +35,13 @@ public:
     void setSpeed(float speed);
     void setPosition(double pos);
     void setGain(float gain);
+    void setIndex(int index);
 
     // getter methods
     double getPosition() const;
     double getLength() const;
 	double getOriginalLength() const;
+    int    getIndex() const;
     bool   isWokring() const;
     
     juce::String getTitle() const;

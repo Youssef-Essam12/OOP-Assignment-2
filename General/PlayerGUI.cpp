@@ -84,10 +84,14 @@ thumbnail(512, formatManager, thumbnailCache) {
 PlayerGUI::~PlayerGUI() {
     stopTimer();
 
-    // Clean up dynamically created playlist entry buttons
     for (auto* btn : playlist_buttons) {
         delete btn;
     }
+
+    for (auto* btn : playlist_delete_buttons) {
+        delete btn;
+    }
+
     playlist_buttons.clear();
     playlist_delete_buttons.clear();
 }
@@ -100,7 +104,7 @@ void PlayerGUI::paint(juce::Graphics& g) {
     g.setColour(juce::Colours::lightgrey);
     g.drawRect(waveform);
 
-    if (current_audio_playing == -1) {
+    if (player.getIndex() == -1) {
         g.setColour(juce::Colours::white);
         g.drawFittedText("No Audio Loaded", waveform, juce::Justification::centred, 1);
     }
@@ -176,8 +180,13 @@ void PlayerGUI::add_playlist_entry(const juce::File& file) {
 void PlayerGUI::delete_button(int index)
 {
     // remove from playlist_buttons, playlist_delete_buttons, playlist_paths
-    if (index == current_audio_playing) player.remove_source();
-    if (index <= current_audio_playing) --current_audio_playing;
+    if (index == player.getIndex()) {
+        player.remove_source();
+        player.setIndex(-1);
+    }
+    if (index <= player.getIndex()) {
+        player.setIndex(player.getIndex()-1);
+    }
     playlist_component.removeChildComponent(playlist_buttons[index]);
     playlist_component.removeChildComponent(playlist_delete_buttons[index]);
     delete playlist_buttons[index];
@@ -351,7 +360,6 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
                 const juce::File& file = player.getPlaylistFile(i);
                 if (file.existsAsFile()) {
                     if (player.playFile(i)) {
-                        current_audio_playing = i;
                         updateTrackInfo();
                     }
                     thumbnail.setSource(new juce::FileInputSource(file));
@@ -405,7 +413,7 @@ void PlayerGUI::changeListenerCallback(juce::ChangeBroadcaster* source) {
 
 void PlayerGUI::timerCallback()
 {
-    if (current_audio_playing == -1) {
+    if (player.getIndex() == -1) {
         positionSlider.setRange(0.0, 0.0, juce::dontSendNotification);
         positionSlider.setValue(0.0, juce::dontSendNotification);
         return;

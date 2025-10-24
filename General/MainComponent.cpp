@@ -5,6 +5,14 @@ MainComponent::MainComponent() : player(), gui(player) {
     addAndMakeVisible(gui);
     setSize(500, 1080);
     setAudioChannels(0, 2);
+
+    auto logFile = juce::File::getSpecialLocation(juce::File::tempDirectory)
+        .getChildFile("VibeLog.txt");
+
+    static std::unique_ptr<juce::FileLogger> fileLogger =
+        std::make_unique<juce::FileLogger>(logFile, "Starting log session...", 0);
+
+    juce::Logger::setCurrentLogger(fileLogger.get());
 }
 
 MainComponent::~MainComponent()

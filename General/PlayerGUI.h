@@ -34,7 +34,7 @@ private:
     std::vector<std::string> playlist_paths;
     juce::Component playlist_component;
 
-    int current_audio_playing = -1;
+    //int current_audio_playing = -1;
 
 
     // -------Buttons-------------
