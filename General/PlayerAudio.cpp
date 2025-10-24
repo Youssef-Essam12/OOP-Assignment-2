@@ -57,42 +57,6 @@ void PlayerAudio::setGain(float gain) {
     transportSource.setGain(gain);
 }
 
-bool displayAllMetadata(juce::AudioFormatReader* reader)
-{
-    if (reader == nullptr)
-        return false;
-
-    // 1. Get a reference to the metadata StringPairArray
-    const juce::StringPairArray& metadata = reader->metadataValues;
-
-    // 2. Get a list of all keys found in the file
-    juce::StringArray keys = metadata.getAllKeys();
-
-    if (keys.isEmpty())
-    {
-        juce::Logger::writeToLog("No metadata found in the file.");
-        return false;
-    }
-
-    juce::Logger::writeToLog("--- Metadata for File ---");
-
-    // 3. Iterate through all found keys
-    for (int i = 0; i < keys.size(); ++i)
-    {
-        const juce::String& key = keys[i];
-
-        const juce::String value = metadata.getValue(key, juce::String());
-
-        // Use DBG or Logger::writeToLog to display the result
-        juce::Logger::writeToLog(key + ": " + value);
-
-        // If you wanted to ONLY display non-empty values, you would use:
-        // if (value.isNotEmpty()) { juce::Logger::writeToLog(key + ": " + value); }
-    }
-    juce::Logger::writeToLog("-------------------------");
-
-    return true;
-}
 
 bool PlayerAudio::load(const juce::File& file) {
     if (file.existsAsFile())
@@ -109,7 +73,6 @@ bool PlayerAudio::load(const juce::File& file) {
 
             audioReaders.push_back(std::unique_ptr<juce::AudioFormatReader>(reader));
 
-            displayAllMetadata(reader);
 
 ;            //this->original_audio_length_in_seconds.emplace_back(this->getLength());
             this->original_audio_length_in_seconds.emplace_back(reader->lengthInSamples / reader->sampleRate);
@@ -142,7 +105,6 @@ bool PlayerAudio::playFile(int index) {
         currently_loaded_audioFile_index = index;
         transportSource.start();
 
-		displayAllMetadata(reader);
         return true;
     }
     return false;

@@ -10,7 +10,7 @@ thumbnail(512, formatManager, thumbnailCache) {
     thumbnail.addChangeListener(this);
     playlist_component.setAlwaysOnTop(true);
     // Add buttons
-    for (auto* btn : { &loadButton , &stopButton,
+    for (auto* btn : { &loadButton, &restartButton  , &stopButton,
                        &muteButton, &playPauseButton, &toEnd,
                        &toStart   , &backward       , &forward,
                        &loopButton, &playlist_menu })
@@ -19,12 +19,34 @@ thumbnail(512, formatManager, thumbnailCache) {
         addAndMakeVisible(btn);
     }
 
+   
+    // Add labels
+    std::vector<juce::Label*> labels = {
+        &volumeLabel,
+        &speedLabel,
+        &titleLabel,
+        &artistLabel
+    };
+    for (auto* label : labels) {
+        addAndMakeVisible(label);
+    }
+
+    volumeLabel.setText("Volume", juce::dontSendNotification);
+    speedLabel.setText("Speed", juce::dontSendNotification);
+
+    titleLabel.setFont(juce::Font(18.0f, juce::Font::bold));
+    titleLabel.setJustificationType(juce::Justification::centred);
+
+    artistLabel.setFont(juce::Font(14.0f));
+    artistLabel.setJustificationType(juce::Justification::centred);
+
     // Add sliders
     std::vector<juce::Slider*> sliders = {
         &volumeSlider,
         &speedSlider,
         &positionSlider
     };
+
     for (auto* slider : sliders) {
         slider->setRange(0.0, 100, 1);
         slider->setValue(20);
@@ -60,25 +82,6 @@ thumbnail(512, formatManager, thumbnailCache) {
     positionSlider.setTextValueSuffix(" s");
 
     startTimerHz(30);
-    // Add labels
-    std::vector<juce::Label*> labels = {
-        &volumeLabel,
-        &speedLabel,
-        &titleLabel,
-        &artistLabel
-    };
-    for (auto* label : labels) {
-        addAndMakeVisible(label);
-    }
-
-    volumeLabel.setText("Volume", juce::dontSendNotification);
-    speedLabel.setText("Speed", juce::dontSendNotification);
-
-    titleLabel.setFont(juce::Font(18.0f, juce::Font::bold));
-    titleLabel.setJustificationType(juce::Justification::centred);
-
-    artistLabel.setFont(juce::Font(14.0f));
-    artistLabel.setJustificationType(juce::Justification::centred);
 }
 
 PlayerGUI::~PlayerGUI() {
@@ -213,7 +216,7 @@ void PlayerGUI::resized() {
         for (auto* btn : { &playPauseButton,
                            &forward, &backward,
                            &toEnd, &toStart,
-                           &muteButton,
+                           &muteButton,&restartButton,
                            &stopButton, &loopButton,
                            &playlist_menu,&loadButton })
         {
@@ -275,10 +278,6 @@ void PlayerGUI::resized() {
             deleteButtonWidth,
             buttonHeight);
     }
-
-    volumeSlider.toFront(true);
-    speedSlider.toFront(true);
-    positionSlider.toFront(true);
 }
 void PlayerGUI::buttonClicked(juce::Button* button) {
 
@@ -316,6 +315,12 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
                     }
                 }
             });
+    }
+
+    else if (button == &restartButton)
+    {
+        player.setPosition(0.0);
+        player.start();
     }
 
     else if (button == &stopButton)
@@ -420,15 +425,19 @@ void PlayerGUI::timerCallback()
     }
     double truelengthInSeconds = player.getOriginalLength();
 
-    if (truelengthInSeconds > 0)
+    if (!positionSlider.isMouseButtonDown())
     {
-        double ratio = truelengthInSeconds / player.getLength();
+        if (truelengthInSeconds > 0)
+        {
+            double ratio = truelengthInSeconds / player.getLength();
 
-        positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
-        positionSlider.setValue(ratio * player.getPosition(), juce::dontSendNotification);
+            positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
+            positionSlider.setValue(ratio * player.getPosition(), juce::dontSendNotification);
+        }
+        else {
+            positionSlider.setValue(0.0, juce::dontSendNotification);
+        }
     }
-    else {
-        positionSlider.setValue(0.0, juce::dontSendNotification);
-    }
+    
     repaint();
 }
