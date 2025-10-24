@@ -35,13 +35,12 @@ void PlayerAudio::stop() {
 }
 
 void PlayerAudio::play_pause() {
-    if (!isPaused) {
+    if (transportSource.isPlaying()) {
         transportSource.stop();
     }
     else {
         transportSource.start();
     }
-    isPaused = !isPaused;
 }
 
 
@@ -61,7 +60,7 @@ bool PlayerAudio::load(const juce::File& file) {
 
             const auto& metadata = reader->metadataValues;
             title = metadata.getValue("TITLE", file.getFileNameWithoutExtension());
-            artist = metadata.getValue("ARTIST", "Unknown Artist");
+            artist = metadata.getValue("TPE1", metadata.getValue("ARTIST", "Unknown Artist"));
 
             audioReaders.push_back(std::unique_ptr<juce::AudioFormatReader>(reader));
             //this->original_audio_length_in_seconds.emplace_back(this->getLength());
@@ -165,6 +164,7 @@ void PlayerAudio::move_by(double displacement) {
 }
 
 void PlayerAudio::setSpeed(float speed) {
+    bool isplaying = transportSource.isPlaying();
     float new_sample_rate = this->sample_rate * speed;
 
     double position_ratio = this->transportSource.getCurrentPosition() / this->getLength();
@@ -176,7 +176,7 @@ void PlayerAudio::setSpeed(float speed) {
         max_file_channels);
     this->transportSource.setPosition(position_ratio * this->getLength());
 
-    if (!isPaused) this->transportSource.start();
+    if (isplaying) this->transportSource.start();
 }
 
 
