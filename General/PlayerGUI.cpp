@@ -10,7 +10,7 @@ thumbnail(512, formatManager, thumbnailCache) {
     thumbnail.addChangeListener(this);
     playlist_component.setAlwaysOnTop(true);
     // Add buttons
-    for (auto* btn : { &loadButton, &restartButton  , &stopButton,
+    for (auto* btn : { &loadButton , &stopButton,
                        &muteButton, &playPauseButton, &toEnd,
                        &toStart   , &backward       , &forward,
                        &loopButton, &playlist_menu })
@@ -204,7 +204,7 @@ void PlayerGUI::resized() {
         for (auto* btn : { &playPauseButton,
                            &forward, &backward,
                            &toEnd, &toStart,
-                           &muteButton,&restartButton,
+                           &muteButton,
                            &stopButton, &loopButton,
                            &playlist_menu,&loadButton })
         {
@@ -266,6 +266,10 @@ void PlayerGUI::resized() {
             deleteButtonWidth,
             buttonHeight);
     }
+
+    volumeSlider.toFront(true);
+    speedSlider.toFront(true);
+    positionSlider.toFront(true);
 }
 void PlayerGUI::buttonClicked(juce::Button* button) {
 
@@ -303,11 +307,6 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
                     }
                 }
             });
-    }
-
-    else if (button == &restartButton)
-    {
-        player.start();
     }
 
     else if (button == &stopButton)

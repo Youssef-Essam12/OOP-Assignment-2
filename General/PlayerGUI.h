@@ -39,7 +39,7 @@ private:
 
     // -------Buttons-------------
     juce::TextButton loadButton{ "Load Audio" };
-    juce::TextButton restartButton{ "Restart" };
+    //juce::TextButton restartButton{ "Restart" };
     juce::TextButton stopButton{ "Stop" };
     juce::TextButton muteButton{ "Mute" };
     juce::TextButton playPauseButton{ "Play/Pause" };
