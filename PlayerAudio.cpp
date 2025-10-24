@@ -144,6 +144,10 @@ void PlayerAudio::mute() {
 }
 
 void PlayerAudio::setPosition(double pos) {
+    
+    pos = std::min(pos, this->getLength());
+    pos = std::max(0.0, pos);
+
     transportSource.setPosition(pos);
 }
 

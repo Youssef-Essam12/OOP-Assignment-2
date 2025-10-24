@@ -385,7 +385,8 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
     {
         if (slider->isMouseButtonDown())
         {
-            player.setPosition(current_value);
+            double new_position = current_value / player.getOriginalLength() * player.getLength();
+            player.setPosition(new_position);
         }
     }
 
