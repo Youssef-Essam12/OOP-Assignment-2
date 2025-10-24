@@ -1,5 +1,8 @@
-#pragma once
+    #pragma once
 #include "PlayerGUI.h"
+#include <fstream>
+#include "json.hpp"
+using json = nlohmann::json;
 
 PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player),
 thumbnailCache(5),
@@ -79,6 +82,37 @@ thumbnail(512, formatManager, thumbnailCache) {
 
     artistLabel.setFont(juce::Font(14.0f));
     artistLabel.setJustificationType(juce::Justification::centred);
+
+    // Load last session
+    json session;
+    std::fstream session_file("data.json");
+    if (session_file.is_open()) {
+        session_file >> session;
+        session_file.close();
+    }
+    else return;
+
+    if (session.empty()) return;
+    if (!(session.contains("last_audio_path") && session.contains("playlist") && session.contains("last_played_index") && session.contains("timestamp"))) return;
+    std::vector<std::string> paths = session["playlist"].get<std::vector<std::string>>();
+    current_audio_playing = session["last_played_index"].get<int>();
+    std::string last_played_path = session["last_audio_path"].get<std::string>();
+
+    for (std::string path : paths) {
+        juce::File f = juce::File((juce::String)path);
+        if (player.load(f)) add_playlist_entry(f);
+    }
+    int last_played_index = session["last_played_index"].get<int>();
+    juce::File file = juce::File((juce::String)last_played_path);
+    if (file.existsAsFile()) {
+        if (player.playFile(last_played_index)) {
+            current_audio_playing = last_played_index;
+            updateTrackInfo();
+        }
+        thumbnail.setSource(new juce::FileInputSource(file));
+        player.setPosition(session["timestamp"].get<double>());
+        player.play_pause();
+    }
 }
 
 PlayerGUI::~PlayerGUI() {
@@ -90,6 +124,16 @@ PlayerGUI::~PlayerGUI() {
     }
     playlist_buttons.clear();
     playlist_delete_buttons.clear();
+
+
+    json session;
+    if (~current_audio_playing) session["last_audio_path"] = playlist_paths[current_audio_playing];
+    session["last_played_index"] = current_audio_playing;
+    session["timestamp"] = player.getPosition();
+    session["playlist"] = playlist_paths;
+    std::fstream session_file("data.json");
+    session_file << session.dump(4);
+    session_file.close();
 }
 
 void PlayerGUI::paint(juce::Graphics& g) {
