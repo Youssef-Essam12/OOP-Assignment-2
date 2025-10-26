@@ -21,6 +21,14 @@ void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferTo
     }
 }
 
+void PlayerAudio::setIndex(int index) {
+    this->currently_loaded_audioFile_index = index;
+}
+
+int PlayerAudio::getIndex() const {
+    return currently_loaded_audioFile_index;
+}
+
 void PlayerAudio::releaseResources() {
 	transportSource.releaseResources();
 }
@@ -35,13 +43,12 @@ void PlayerAudio::stop() {
 }
 
 void PlayerAudio::play_pause() {
-    if (!isPaused) {
+    if (transportSource.isPlaying()) {
         transportSource.stop();
     }
     else {
         transportSource.start();
     }
-    isPaused = !isPaused;
 }
 
 
@@ -49,6 +56,7 @@ void PlayerAudio::setGain(float gain) {
     if (!this->is_muted) this->current_gain = gain;
     transportSource.setGain(gain);
 }
+
 
 bool PlayerAudio::load(const juce::File& file) {
     if (file.existsAsFile())
@@ -61,10 +69,12 @@ bool PlayerAudio::load(const juce::File& file) {
 
             const auto& metadata = reader->metadataValues;
             title = metadata.getValue("TITLE", file.getFileNameWithoutExtension());
-            artist = metadata.getValue("ARTIST", "Unknown Artist");
+            artist = metadata.getValue("TPE1", metadata.getValue("ARTIST", "Unknown Artist"));
 
             audioReaders.push_back(std::unique_ptr<juce::AudioFormatReader>(reader));
-            //this->original_audio_length_in_seconds.emplace_back(this->getLength());
+
+
+;            //this->original_audio_length_in_seconds.emplace_back(this->getLength());
             this->original_audio_length_in_seconds.emplace_back(reader->lengthInSamples / reader->sampleRate);
             return true;
         }
@@ -103,7 +113,6 @@ bool PlayerAudio::playFile(int index) {
 void PlayerAudio::delete_button(int index)
 {
     // remove from audioFiles, audioFileMetadata, audioReaders in player
-    if (index <= currently_loaded_audioFile_index) --currently_loaded_audioFile_index;
     audioFiles.erase(audioFiles.begin() + index);
     audioFileMetadata.erase(audioFileMetadata.begin() + index);
     audioReaders.erase(audioReaders.begin() + index);
@@ -144,6 +153,10 @@ void PlayerAudio::mute() {
 }
 
 void PlayerAudio::setPosition(double pos) {
+    
+    pos = std::min(pos, this->getLength());
+    pos = std::max(0.0, pos);
+
     transportSource.setPosition(pos);
 }
 
@@ -161,6 +174,7 @@ void PlayerAudio::move_by(double displacement) {
 }
 
 void PlayerAudio::setSpeed(float speed) {
+    bool isplaying = transportSource.isPlaying();
     float new_sample_rate = this->sample_rate * speed;
 
     double position_ratio = this->transportSource.getCurrentPosition() / this->getLength();
@@ -172,7 +186,7 @@ void PlayerAudio::setSpeed(float speed) {
         max_file_channels);
     this->transportSource.setPosition(position_ratio * this->getLength());
 
-    if (!isPaused) this->transportSource.start();
+    if (isplaying) this->transportSource.start();
 }
 
 

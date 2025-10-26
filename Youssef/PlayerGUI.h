@@ -28,13 +28,13 @@ public:
 private:
     //-------Global variables-------
     PlayerAudio& player;
-    bool playlist_componenet_visible = false;
+    bool playlist_componenet_visible = true;
     std::vector<juce::TextButton*> playlist_buttons;
     std::vector<juce::TextButton*> playlist_delete_buttons;
     std::vector<std::string> playlist_paths;
     juce::Component playlist_component;
 
-    int current_audio_playing = -1;
+    //int current_audio_playing = -1;
 
 
     // -------Buttons-------------

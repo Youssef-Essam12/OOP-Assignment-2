@@ -5,6 +5,7 @@ MainComponent::MainComponent() : player(), gui(player) {
     addAndMakeVisible(gui);
     setSize(500, 1080);
     setAudioChannels(0, 2);
+
 }
 
 MainComponent::~MainComponent()

@@ -1,8 +1,5 @@
-    #pragma once
+#pragma once
 #include "PlayerGUI.h"
-#include <fstream>
-#include "json.hpp"
-using json = nlohmann::json;
 
 PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player),
 thumbnailCache(5),
@@ -22,12 +19,34 @@ thumbnail(512, formatManager, thumbnailCache) {
         addAndMakeVisible(btn);
     }
 
+   
+    // Add labels
+    std::vector<juce::Label*> labels = {
+        &volumeLabel,
+        &speedLabel,
+        &titleLabel,
+        &artistLabel
+    };
+    for (auto* label : labels) {
+        addAndMakeVisible(label);
+    }
+
+    volumeLabel.setText("Volume", juce::dontSendNotification);
+    speedLabel.setText("Speed", juce::dontSendNotification);
+
+    titleLabel.setFont(juce::Font(18.0f, juce::Font::bold));
+    titleLabel.setJustificationType(juce::Justification::centred);
+
+    artistLabel.setFont(juce::Font(14.0f));
+    artistLabel.setJustificationType(juce::Justification::centred);
+
     // Add sliders
     std::vector<juce::Slider*> sliders = {
         &volumeSlider,
         &speedSlider,
         &positionSlider
     };
+
     for (auto* slider : sliders) {
         slider->setRange(0.0, 100, 1);
         slider->setValue(20);
@@ -61,56 +80,41 @@ thumbnail(512, formatManager, thumbnailCache) {
 
     positionSlider.setNumDecimalPlacesToDisplay(2);
     positionSlider.setTextValueSuffix(" s");
-
     startTimerHz(30);
-    // Add labels
-    std::vector<juce::Label*> labels = {
-        &volumeLabel,
-        &speedLabel,
-        &titleLabel,
-        &artistLabel
-    };
-    for (auto* label : labels) {
-        addAndMakeVisible(label);
-    }
 
-    volumeLabel.setText("Volume", juce::dontSendNotification);
-    speedLabel.setText("Speed", juce::dontSendNotification);
-
-    titleLabel.setFont(juce::Font(18.0f, juce::Font::bold));
-    titleLabel.setJustificationType(juce::Justification::centred);
-
-    artistLabel.setFont(juce::Font(14.0f));
-    artistLabel.setJustificationType(juce::Justification::centred);
-
-    // Load last session
-    json session;
-    std::fstream session_file("data.json");
-    if (session_file.is_open()) {
-        session_file >> session;
-        session_file.close();
+    // Load Session
+    juce::File session_file("data.json");
+    juce::var session;
+    if (session_file.existsAsFile()) {
+        juce::String json_data = session_file.loadFileAsString();
+        session = juce::JSON::parse(json_data);
     }
     else return;
 
-    if (session.empty()) return;
-    if (!(session.contains("last_audio_path") && session.contains("playlist") && session.contains("last_played_index") && session.contains("timestamp"))) return;
-    std::vector<std::string> paths = session["playlist"].get<std::vector<std::string>>();
-    current_audio_playing = session["last_played_index"].get<int>();
-    std::string last_played_path = session["last_audio_path"].get<std::string>();
+    if (session.isVoid()) return;
+    if (session["last_audio_path"].isVoid() ||
+        session["playlist"].isVoid() ||
+        session["last_played_index"].isVoid() ||
+        session["timestamp"].isVoid())
+        return;
 
-    for (std::string path : paths) {
-        juce::File f = juce::File((juce::String)path);
+    juce::Array<juce::var> *paths_from_json_file = session["playlist"].getArray();
+    if (paths_from_json_file == nullptr) return;
+    std::string last_played_path = session["last_audio_path"].toString().toStdString();
+
+    for (auto &path : *paths_from_json_file) {
+        juce::File f = juce::File(path.toString());
         if (player.load(f)) add_playlist_entry(f);
     }
-    int last_played_index = session["last_played_index"].get<int>();
+    int last_played_index = (int)session["last_played_index"];
     juce::File file = juce::File((juce::String)last_played_path);
     if (file.existsAsFile()) {
         if (player.playFile(last_played_index)) {
-            current_audio_playing = last_played_index;
+            player.setIndex(last_played_index);
             updateTrackInfo();
         }
         thumbnail.setSource(new juce::FileInputSource(file));
-        player.setPosition(session["timestamp"].get<double>());
+        player.setPosition((double)session["timestamp"]);
         player.play_pause();
     }
 }
@@ -118,22 +122,31 @@ thumbnail(512, formatManager, thumbnailCache) {
 PlayerGUI::~PlayerGUI() {
     stopTimer();
 
-    // Clean up dynamically created playlist entry buttons
     for (auto* btn : playlist_buttons) {
         delete btn;
     }
+
+    for (auto* btn : playlist_delete_buttons) {
+        delete btn;
+    }
+
     playlist_buttons.clear();
     playlist_delete_buttons.clear();
 
+    juce::DynamicObject* session = new juce::DynamicObject();
 
-    json session;
-    if (~current_audio_playing) session["last_audio_path"] = playlist_paths[current_audio_playing];
-    session["last_played_index"] = current_audio_playing;
-    session["timestamp"] = player.getPosition();
-    session["playlist"] = playlist_paths;
-    std::fstream session_file("data.json");
-    session_file << session.dump(4);
-    session_file.close();
+    int current_audio_playing = player.getIndex();
+    if (~current_audio_playing) session->setProperty("last_audio_path", juce::String(playlist_paths[current_audio_playing]));
+    session->setProperty("last_played_index", current_audio_playing);
+    session->setProperty("timestamp", player.getPosition());
+    juce::Array<juce::var> arr;
+    for (auto& path : playlist_paths) arr.add(juce::String(path));
+    session->setProperty("playlist", arr);
+
+    juce::var session_json(session);
+    juce::String jsonOutput = juce::JSON::toString(session_json, false);
+    juce::File sessionFile("data.json");
+    sessionFile.replaceWithText(jsonOutput);
 }
 
 void PlayerGUI::paint(juce::Graphics& g) {
@@ -144,7 +157,7 @@ void PlayerGUI::paint(juce::Graphics& g) {
     g.setColour(juce::Colours::lightgrey);
     g.drawRect(waveform);
 
-    if (current_audio_playing == -1) {
+    if (player.getIndex() == -1) {
         g.setColour(juce::Colours::white);
         g.drawFittedText("No Audio Loaded", waveform, juce::Justification::centred, 1);
     }
@@ -220,8 +233,13 @@ void PlayerGUI::add_playlist_entry(const juce::File& file) {
 void PlayerGUI::delete_button(int index)
 {
     // remove from playlist_buttons, playlist_delete_buttons, playlist_paths
-    if (index == current_audio_playing) player.remove_source();
-    if (index <= current_audio_playing) --current_audio_playing;
+    if (index == player.getIndex()) {
+        player.remove_source();
+        player.setIndex(-1);
+    }
+    if (index < player.getIndex()) {
+        player.setIndex(player.getIndex()-1);
+    }
     playlist_component.removeChildComponent(playlist_buttons[index]);
     playlist_component.removeChildComponent(playlist_delete_buttons[index]);
     delete playlist_buttons[index];
@@ -351,6 +369,7 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
 
     else if (button == &restartButton)
     {
+        player.setPosition(0.0);
         player.start();
     }
 
@@ -396,7 +415,6 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
                 const juce::File& file = player.getPlaylistFile(i);
                 if (file.existsAsFile()) {
                     if (player.playFile(i)) {
-                        current_audio_playing = i;
                         updateTrackInfo();
                     }
                     thumbnail.setSource(new juce::FileInputSource(file));
@@ -429,7 +447,8 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
     {
         if (slider->isMouseButtonDown())
         {
-            player.setPosition(current_value);
+            double new_position = current_value / player.getOriginalLength() * player.getLength();
+            player.setPosition(new_position);
         }
     }
 
@@ -449,22 +468,26 @@ void PlayerGUI::changeListenerCallback(juce::ChangeBroadcaster* source) {
 
 void PlayerGUI::timerCallback()
 {
-    if (current_audio_playing == -1) {
+    if (player.getIndex() == -1) {
         positionSlider.setRange(0.0, 0.0, juce::dontSendNotification);
         positionSlider.setValue(0.0, juce::dontSendNotification);
         return;
     }
     double truelengthInSeconds = player.getOriginalLength();
 
-    if (truelengthInSeconds > 0)
+    if (!positionSlider.isMouseButtonDown())
     {
-        double ratio = truelengthInSeconds / player.getLength();
+        if (truelengthInSeconds > 0)
+        {
+            double ratio = truelengthInSeconds / player.getLength();
 
-        positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
-        positionSlider.setValue(ratio * player.getPosition(), juce::dontSendNotification);
+            positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
+            positionSlider.setValue(ratio * player.getPosition(), juce::dontSendNotification);
+        }
+        else {
+            positionSlider.setValue(0.0, juce::dontSendNotification);
+        }
     }
-    else {
-        positionSlider.setValue(0.0, juce::dontSendNotification);
-    }
+    
     repaint();
 }

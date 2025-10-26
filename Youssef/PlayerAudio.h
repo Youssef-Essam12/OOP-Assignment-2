@@ -35,11 +35,13 @@ public:
     void setSpeed(float speed);
     void setPosition(double pos);
     void setGain(float gain);
+    void setIndex(int index);
 
     // getter methods
     double getPosition() const;
     double getLength() const;
 	double getOriginalLength() const;
+    int    getIndex() const;
     bool   isWokring() const;
     
     juce::String getTitle() const;
@@ -56,7 +58,6 @@ private:
 
     int currently_loaded_audioFile_index = -1;
     bool is_muted = 0;
-    bool isPaused = 0;
     float current_gain = 0;
 
     int max_file_channels = 0;
