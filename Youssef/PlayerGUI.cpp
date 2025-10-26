@@ -273,7 +273,7 @@ void PlayerGUI::clear_markers()
 
 void PlayerGUI::resized() {
 
-    int buttons_w = 100;
+    int buttons_w = 70;
     int buttons_h = 50;
 
     int button_margin = buttons_w * 0.40;
@@ -455,12 +455,13 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
     else // play list buttons
     {
         // Check if the clicked button is one of the playlist entries
-        clear_markers();
         for (size_t i = 0; i < playlist_buttons.size(); ++i) {
             if (button == playlist_buttons[i]) {
+                if (i == player.getIndex()) break;
                 const juce::File& file = player.getPlaylistFile(i);
                 if (file.existsAsFile()) {
                     if (player.playFile(i)) {
+                        clear_markers();
                         updateTrackInfo();
                     }
                     thumbnail.setSource(new juce::FileInputSource(file));
