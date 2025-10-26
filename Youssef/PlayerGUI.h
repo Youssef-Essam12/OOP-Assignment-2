@@ -1,11 +1,13 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PlayerAudio.h"
+#include "marker.h"
 
 class PlayerGUI : public juce::Component,
     public juce::Button::Listener,
     public juce::Slider::Listener,
     public juce::ChangeListener,
+    public juce::ComponentListener,
     public juce::Timer {
 public:
     PlayerGUI(PlayerAudio& audio_player);
@@ -23,6 +25,8 @@ public:
     void display_playlist_menu();
     void add_playlist_entry(const juce::File& file);
     void delete_button(int index);
+    void display_markers();
+    void clear_markers();
 
     //void wave_form(juce::Graphics& g);
 private:
@@ -32,6 +36,7 @@ private:
     std::vector<juce::TextButton*> playlist_buttons;
     std::vector<juce::TextButton*> playlist_delete_buttons;
     std::vector<std::string> playlist_paths;
+    std::vector<marker*> markers;
     juce::Component playlist_component;
 
     //int current_audio_playing = -1;
@@ -49,6 +54,9 @@ private:
     juce::TextButton backward{ "-10s" };
     juce::TextButton forward{ "+10s" };
     juce::TextButton playlist_menu{ "Playlist" };
+    juce::TextButton addMarker{ "Add Marker" };
+    juce::TextButton displayMarkers{ "Toggle Markers" };
+    juce::TextButton clearMarkers{ "Clear Markers" };
 
     //----------Sliders-------------
     juce::Slider volumeSlider;
@@ -69,6 +77,8 @@ private:
     //------------Sizes-----------
     int panelWidth;
     int panelHeight;
+
+    bool markers_visible = 1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };

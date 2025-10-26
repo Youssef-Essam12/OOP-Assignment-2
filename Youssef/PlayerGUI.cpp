@@ -13,7 +13,7 @@ thumbnail(512, formatManager, thumbnailCache) {
     for (auto* btn : { &loadButton, &restartButton  , &stopButton,
                        &muteButton, &playPauseButton, &toEnd,
                        &toStart   , &backward       , &forward,
-                       &loopButton, &playlist_menu })
+                       &loopButton, &playlist_menu, &addMarker, &displayMarkers, &clearMarkers })
     {
         btn->addListener(this);
         addAndMakeVisible(btn);
@@ -128,6 +128,10 @@ PlayerGUI::~PlayerGUI() {
 
     for (auto* btn : playlist_delete_buttons) {
         delete btn;
+    }
+
+    for (auto* m : markers) {
+        delete m;
     }
 
     playlist_buttons.clear();
@@ -249,6 +253,24 @@ void PlayerGUI::delete_button(int index)
     playlist_paths.erase(playlist_paths.begin() + index);
 }
 
+void PlayerGUI::display_markers() {
+    for (auto &m : markers) {
+        if (m) {
+            m->setVisible(markers_visible);
+        }
+    }
+}
+
+void PlayerGUI::clear_markers()
+{
+    for (auto* m : markers) {
+        removeChildComponent(m);
+        delete m;
+    }
+    markers.clear();
+    repaint();
+}
+
 void PlayerGUI::resized() {
 
     int buttons_w = 100;
@@ -268,7 +290,7 @@ void PlayerGUI::resized() {
                            &toEnd, &toStart,
                            &muteButton,&restartButton,
                            &stopButton, &loopButton,
-                           &playlist_menu,&loadButton })
+                           &playlist_menu,&loadButton,&addMarker, &displayMarkers, &clearMarkers })
         {
             int factor = (i % 2 == 0 ? 1 : -1);
             btn->setBounds(buttons_x + factor * (i / 2) * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
@@ -367,12 +389,6 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
             });
     }
 
-    else if (button == &restartButton)
-    {
-        player.setPosition(0.0);
-        player.start();
-    }
-
     else if (button == &stopButton)
     {
         player.stop();
@@ -407,9 +423,33 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
     {
         display_playlist_menu();
     }
+    else if (button == &addMarker) {
+        double current_value = positionSlider.getValue();
+        auto& lf = positionSlider.getLookAndFeel();
+        auto layout = lf.getSliderLayout(positionSlider);
+        auto trackBounds = layout.sliderBounds;
+        
+        double markerOffset = (current_value / positionSlider.getMaximum()) * trackBounds.getWidth();
+        auto m = new marker(positionSlider.getX()+trackBounds.getX()-4, positionSlider.getY() + 10, markerOffset, player.getPosition(), player.getLength());
+        markers.push_back(m);
+        addAndMakeVisible(m);
+        m->onClick = [this, m](double pos, double length) {
+            double new_pos = pos * player.getLength() / length;
+            player.setPosition(new_pos);
+            m->set_pos_length(new_pos, player.getLength());
+        };
+    }
+    else if (button == &displayMarkers) {
+        markers_visible ^= 1;
+        display_markers();
+    }
+    else if (button == &clearMarkers) {
+        clear_markers();
+    }
     else // play list buttons
     {
         // Check if the clicked button is one of the playlist entries
+        clear_markers();
         for (size_t i = 0; i < playlist_buttons.size(); ++i) {
             if (button == playlist_buttons[i]) {
                 const juce::File& file = player.getPlaylistFile(i);
