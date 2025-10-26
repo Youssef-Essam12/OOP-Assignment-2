@@ -438,6 +438,12 @@ void PlayerGUI::buttonClicked(juce::Button* button) {
             player.setPosition(new_pos);
             m->set_pos_length(new_pos, player.getLength());
         };
+        /*
+        TO-DO
+        1. Display markers in list
+        2. add label on top of each marker (marker 1, marker 2, ...)
+        3. Save and load markers
+        */ 
     }
     else if (button == &displayMarkers) {
         markers_visible ^= 1;
