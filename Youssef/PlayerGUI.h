@@ -27,20 +27,27 @@ public:
     void delete_button(int index);
     void display_markers();
     void clear_markers();
+    void add_marker(double pos);
+    void display_markers_menu();
+    void add_markers_list_entry(std::string text);
+    void delete_marker(int index);
 
-    //void wave_form(juce::Graphics& g);
 private:
     //-------Global variables-------
     PlayerAudio& player;
     bool playlist_componenet_visible = true;
     std::vector<juce::TextButton*> playlist_buttons;
     std::vector<juce::TextButton*> playlist_delete_buttons;
+    std::vector<juce::TextButton*> marker_buttons;
+    std::vector<juce::TextButton*> marker_delete_buttons;
     std::vector<std::string> playlist_paths;
     std::vector<marker*> markers;
+    std::vector<juce::Label*> markers_labels;
+    std::vector<double> markers_pos;
     juce::Component playlist_component;
 
-    //int current_audio_playing = -1;
-
+    juce::Component markers_list_component;
+    bool markers_list_visible = false;
 
     // -------Buttons-------------
     juce::TextButton loadButton{ "Load Audio" };
@@ -78,7 +85,9 @@ private:
     int panelWidth;
     int panelHeight;
 
-    bool markers_visible = 1;
+    bool markers_visible = 0;
+    bool markers_added = 0;
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };
