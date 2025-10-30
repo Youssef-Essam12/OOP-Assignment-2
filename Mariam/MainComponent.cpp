@@ -5,6 +5,7 @@ MainComponent::MainComponent() : player(), gui(player) {
     addAndMakeVisible(gui);
     setSize(500, 1080);
     setAudioChannels(0, 2);
+
 }
 
 MainComponent::~MainComponent()
@@ -68,7 +69,7 @@ void MainComponent::resized()
 {
     gui.setBounds(0, 0, getWidth(), getHeight());
 }
+
 void MainComponent::loop() {
     player.loop();
 }
-

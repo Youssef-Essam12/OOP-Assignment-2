@@ -25,7 +25,6 @@ public:
     void mute();
     void loop();
 
-
     // GUI
     void paint(juce::Graphics& g);
     void resized();
