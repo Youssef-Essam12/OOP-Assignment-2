@@ -18,7 +18,7 @@
         for (auto* btn : { &loadButton, &restartButton  , &stopButton,
                            &muteButton, &playPauseButton, &toEnd,
                            &toStart   , &backward       , &forward,
-                           &loopButton, &playlist_menu, &addMarker, &displayMarkers, &clearMarkers })
+                           &loopButton, &playlist_menu, &addMarker, &displayMarkers, &clearMarkers, &equalizerButton, &reverbButton,& setAButton,& setBButton })
         {
             btn->addListener(this);
             addAndMakeVisible(btn);
@@ -30,7 +30,11 @@
             &volumeLabel,
             &speedLabel,
             &titleLabel,
-            &artistLabel
+            &artistLabel,
+            &lowLabel,
+            &midLabel,
+            &highLabel,
+            &reverbLabel,
         };
         for (auto* label : labels) {
             addAndMakeVisible(label);
@@ -38,6 +42,10 @@
 
         volumeLabel.setText("Volume", juce::dontSendNotification);
         speedLabel.setText("Speed", juce::dontSendNotification);
+        lowLabel.setText("Low", juce::dontSendNotification);
+        midLabel.setText("Mid", juce::dontSendNotification);
+        highLabel.setText("High", juce::dontSendNotification);
+        reverbLabel.setText("Reverb", juce::dontSendNotification);
 
         titleLabel.setFont(juce::Font(18.0f, juce::Font::bold));
         titleLabel.setJustificationType(juce::Justification::centred);
@@ -49,7 +57,11 @@
         std::vector<juce::Slider*> sliders = {
             &volumeSlider,
             &speedSlider,
-            &positionSlider
+            &positionSlider,
+            &low_eq,
+            &mid_eq,
+            &high_eq,
+            &reverbSlider
         };
 
         for (auto* slider : sliders) {
@@ -64,6 +76,23 @@
 
             slider->setTextValueSuffix(" %");
         }
+
+        low_eq.setRange(-20.0, 20.0, 0.1);
+        low_eq.setValue(0.0);
+        low_eq.setTextValueSuffix(" dB");
+
+        mid_eq.setRange(-20.0, 20.0, 0.1);
+        mid_eq.setValue(0.0);
+        mid_eq.setTextValueSuffix(" dB");
+
+        high_eq.setRange(-20.0, 20.0, 0.1);
+        high_eq.setValue(0.0);
+        high_eq.setTextValueSuffix(" dB");
+
+        // In constructor, after setting up the sliders:
+        low_eq_value = 0.0f;
+        mid_eq_value = 0.0f;
+        high_eq_value = 0.0f;
 
         positionSlider.textFromValueFunction = [&](double value) {
             std::string result = "";
@@ -177,8 +206,7 @@
 
     void PlayerGUI::paint(juce::Graphics& g) {
         g.fillAll(juce::Colours::darkgrey);
-
-        auto waveform = juce::Rectangle<int>(20, 200, getWidth() - 40, 300);
+        auto waveform = juce::Rectangle<int>(20, 170, getWidth() - 40, 300);
 
         g.setColour(juce::Colours::lightgrey);
         g.drawRect(waveform);
@@ -383,6 +411,8 @@
         markers_labels.clear();
         marker_buttons.clear();
         marker_delete_buttons.clear();
+        player.clearSegmentLoop();
+        aIndex = bIndex = -1;
     }
 
     void PlayerGUI::add_marker(double pos)
@@ -400,7 +430,8 @@
         markers.push_back(m);
         addAndMakeVisible(m);
         m->onClick = [this, m](double p, double length) {
-            double new_pos = p * player.getLength() / length;
+            double ratio = p/player.getOriginalLength();
+            double new_pos = ratio*player.getLength();
             player.setPosition(new_pos);
         };
         juce::Label* label = new juce::Label();
@@ -423,7 +454,7 @@
 
     void PlayerGUI::resized() {
 
-        int buttons_w = 70;
+        int buttons_w = 60;
         int buttons_h = 50;
 
         int button_margin = buttons_w * 0.40;
@@ -440,7 +471,7 @@
                                &toEnd, &toStart,
                                &muteButton,&restartButton,
                                &stopButton, &loopButton,
-                               &playlist_menu,&loadButton,&addMarker, &displayMarkers, &clearMarkers })
+                               &playlist_menu,&loadButton,&addMarker, &displayMarkers, &clearMarkers, &equalizerButton, &reverbButton,& setAButton,& setBButton })
             {
                 int factor = (i % 2 == 0 ? 1 : -1);
                 btn->setBounds(buttons_x + factor * (i / 2) * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
@@ -456,12 +487,20 @@
         volumeSlider.setBounds(slider_x, slider_y, slider_w, slider_h);
         speedSlider.setBounds(slider_x, slider_y - 1 * slider_h, slider_w, slider_h);
         positionSlider.setBounds(slider_x, slider_y - 3 * slider_h, slider_w, slider_h);
+        low_eq.setBounds(slider_x, slider_y - 4 * slider_h, slider_w, slider_h);
+        mid_eq.setBounds(slider_x, slider_y - 5 * slider_h, slider_w, slider_h);
+        high_eq.setBounds(slider_x, slider_y - 6 * slider_h, slider_w, slider_h);
+        reverbSlider.setBounds(slider_x, slider_y - 7 * slider_h, slider_w, slider_h);
 
         int label_w = 70;
         int label_h = 50;
         int label_margin = 20;
         volumeLabel.setBounds(volumeSlider.getX(), volumeSlider.getY(), label_w, label_h);
         speedLabel.setBounds(speedSlider.getX(), speedSlider.getY(), label_w, label_h);
+        lowLabel.setBounds(low_eq.getX(), low_eq.getY(), label_w, label_h);
+        midLabel.setBounds(mid_eq.getX(), mid_eq.getY(), label_w, label_h);
+        highLabel.setBounds(high_eq.getX(), high_eq.getY(), label_w, label_h);
+        reverbLabel.setBounds(reverbSlider.getX(), reverbSlider.getY(), label_w, label_h);
 
         titleLabel.setBounds(0, 50, getWidth(), label_h);
         artistLabel.setBounds(0, 100, getWidth(), 20);
@@ -591,6 +630,33 @@
         {
             player.loop();
         }
+        else if (button == &setAButton)
+        {
+            double pos = player.getPosition();
+            add_marker(pos);
+            aIndex = markers.size() - 1; // remember where marker is
+            
+        }
+        else if (button == &setBButton)
+        {
+            double pos = player.getPosition();
+            add_marker(pos);
+            bIndex = markers.size() - 1; 
+
+            // activate segment looping:
+            if (aIndex != -1 && bIndex != -1 &&
+                markers[aIndex]->get_pos() < markers[bIndex]->get_pos())
+            {
+                player.enableSegmentLoop(markers[aIndex]->get_pos(), markers[bIndex]->get_pos());
+   
+            }
+            else
+            {
+                player.clearSegmentLoop();
+              
+            }
+        }
+
         else if (button == &playlist_menu)
         {
             display_playlist_menu();
@@ -635,7 +701,8 @@
             }
             for (int i = 0; i < markers.size(); i++) {
                 if (button == marker_buttons[i]) {
-                    double new_pos = markers[i]->get_pos() * player.getLength() / markers[i]->get_length();
+                    double ratio = markers[i]->get_pos()/player.getOriginalLength();
+                    double new_pos = ratio*player.getLength();
                     player.setPosition(new_pos);
                     break;
                 }
@@ -663,11 +730,43 @@
         {
             if (slider->isMouseButtonDown())
             {
-                double new_position = current_value / player.getOriginalLength() * player.getLength();
-                player.setPosition(new_position);
+                auto event = juce::Desktop::getInstance().getMainMouseSource();
+                if (event.getCurrentModifiers().isLeftButtonDown())
+                {
+                    double new_position = current_value / player.getOriginalLength() * player.getLength();
+                    player.setPosition(new_position);
+                }
+                if (event.getCurrentModifiers().isRightButtonDown())
+                {
+                    add_marker(current_value);
+                }
             }
         }
-
+        else if (slider == &low_eq) {
+            float low = low_eq.getValue();
+            low_eq_value = low;
+            player.updateFilters(low_eq_value, mid_eq_value, high_eq_value);
+        }
+        else if (slider == &mid_eq) {
+            float mid = mid_eq.getValue();
+            mid_eq_value = mid;
+            player.updateFilters(low_eq_value, mid_eq_value, high_eq_value);
+        }
+        else if (slider == &high_eq) {
+            float high = high_eq.getValue();
+            high_eq_value = high;
+            player.updateFilters(low_eq_value, mid_eq_value, high_eq_value);
+        }
+        else if (slider == &reverbSlider) {
+            if (!current_value) {
+                player.updateReverb(0.0, 0.0, 0.0, 1.0, 0.0);
+            }
+            else {
+                float roomSizeValue = current_value / 100.0f;
+                float wetLevel = roomSizeValue * 0.33f;
+                player.updateReverb(roomSizeValue, 0.5f, wetLevel, 0.8f, 1.0f);
+            }
+        }
     }
 
     void PlayerGUI::updateTrackInfo()

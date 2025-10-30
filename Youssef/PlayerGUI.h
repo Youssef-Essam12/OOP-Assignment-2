@@ -58,23 +58,29 @@ private:
     juce::TextButton toEnd{ "To End" };
     juce::TextButton toStart{ "To Start" };
     juce::TextButton loopButton{ "Loop" };
+    juce::TextButton setAButton{ "Set A" };
+    juce::TextButton setBButton{ "Set B" };
     juce::TextButton backward{ "-10s" };
     juce::TextButton forward{ "+10s" };
     juce::TextButton playlist_menu{ "Playlist" };
     juce::TextButton addMarker{ "Add Marker" };
     juce::TextButton displayMarkers{ "Toggle Markers" };
     juce::TextButton clearMarkers{ "Clear Markers" };
+    juce::TextButton equalizerButton { "Equalizer" };
+    juce::TextButton reverbButton{ "Reverb" };
 
     //----------Sliders-------------
     juce::Slider volumeSlider;
     juce::Slider speedSlider;
     juce::Slider positionSlider;
-
+    juce::Slider low_eq, mid_eq, high_eq;
+    juce::Slider reverbSlider;
     //----------Labels-------------
     juce::Label volumeLabel;
     juce::Label speedLabel;
     juce::Label titleLabel;
     juce::Label artistLabel;
+    juce::Label lowLabel, midLabel, highLabel, reverbLabel;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 
@@ -88,15 +94,9 @@ private:
     bool markers_visible = 0;
     bool markers_added = 0;
 
+    float low_eq_value, mid_eq_value, high_eq_value;
 
+    int aIndex = -1;        
+    int bIndex = -1;        
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };
-
-/*
-*   Play list to do list:
-    Add button for playlist menu
-    On playlist button press -> display menu -> implement display menu function
-    On load button press -> open file chooser -> implement add entry to playlist function
-    Implement delete button to remove loaded images
-
-*/

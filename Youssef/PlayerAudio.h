@@ -26,10 +26,21 @@ public:
     void play_pause();
     void mute();
     void loop();
+
+    void enableSegmentLoop(double start, double end);
+    void clearSegmentLoop();
+
     void move_by(double displacement);
     bool playFile(int index);
     void delete_button(int index);
     void remove_source();
+
+    void updateFilters(float lowGainDB = 1.0f, float midGainDB = 1.0f, float highGainDB = 1.0f);
+    void updateReverb(float roomSize = 0.5f,
+        float damping = 0.5f,
+        float wetLevel = 0.33f,
+        float dryLevel = 0.4f,
+        float width = 1.0f);
 
     // setter methods
     void setSpeed(float speed);
@@ -64,6 +75,10 @@ private:
     float sample_rate = 0.0;
 
     bool is_looping = 0;
+    
+    double loopStart = -1;
+    double loopEnd = -1;
+    bool segmentLoopActive = false;
 
     std::vector<double> original_audio_length_in_seconds;
 
@@ -71,6 +86,13 @@ private:
     std::vector<MetaDataWraper> audioFileMetadata;
     std::vector<std::unique_ptr<juce::AudioFormatReader>> audioReaders;
 
+    // Equalizer
+    using Filter = juce::dsp::IIR::Filter<float>;
+    using FilterChain = juce::dsp::ProcessorChain<Filter, Filter, Filter>;
+    FilterChain leftChain, rightChain;
+
+    // Reverb
+    juce::dsp::Reverb reverb;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };
