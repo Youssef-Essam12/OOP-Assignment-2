@@ -66,8 +66,6 @@ private:
     juce::TextButton addMarker{ "Add Marker" };
     juce::TextButton displayMarkers{ "Toggle Markers" };
     juce::TextButton clearMarkers{ "Clear Markers" };
-    juce::TextButton equalizerButton { "Equalizer" };
-    juce::TextButton reverbButton{ "Reverb" };
 
     //----------Sliders-------------
     juce::Slider volumeSlider;

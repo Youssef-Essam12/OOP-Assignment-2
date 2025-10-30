@@ -18,7 +18,7 @@
         for (auto* btn : { &loadButton, &restartButton  , &stopButton,
                            &muteButton, &playPauseButton, &toEnd,
                            &toStart   , &backward       , &forward,
-                           &loopButton, &playlist_menu, &addMarker, &displayMarkers, &clearMarkers, &equalizerButton, &reverbButton,& setAButton,& setBButton })
+                           &loopButton, &playlist_menu, &addMarker, &displayMarkers, &clearMarkers,& setAButton,& setBButton })
         {
             btn->addListener(this);
             addAndMakeVisible(btn);
@@ -454,7 +454,7 @@
 
     void PlayerGUI::resized() {
 
-        int buttons_w = 60;
+        int buttons_w = 70;
         int buttons_h = 50;
 
         int button_margin = buttons_w * 0.40;
@@ -471,7 +471,7 @@
                                &toEnd, &toStart,
                                &muteButton,&restartButton,
                                &stopButton, &loopButton,
-                               &playlist_menu,&loadButton,&addMarker, &displayMarkers, &clearMarkers, &equalizerButton, &reverbButton,& setAButton,& setBButton })
+                               &playlist_menu,&loadButton,&addMarker, &displayMarkers, &clearMarkers, & setAButton,& setBButton })
             {
                 int factor = (i % 2 == 0 ? 1 : -1);
                 btn->setBounds(buttons_x + factor * (i / 2) * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
