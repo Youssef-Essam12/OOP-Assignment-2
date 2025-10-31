@@ -8,12 +8,22 @@
     thumbnailCache(5),
     thumbnail(512, formatManager, thumbnailCache) {
 
-        addAndMakeVisible(playlist_component);
-        addAndMakeVisible(markers_list_component);
         formatManager.registerBasicFormats();
         thumbnail.addChangeListener(this);
-        playlist_component.setAlwaysOnTop(true);
-        markers_list_component.setAlwaysOnTop(true);
+
+
+        playlist_component = new juce::Component;
+        playlistViewport.setViewedComponent(playlist_component, true);
+        playlistViewport.setAlwaysOnTop(true);
+        playlistViewport.setScrollBarThickness(10);
+        addAndMakeVisible(playlistViewport);
+
+        marker_list_component = new juce::Component;
+        markerlistViewport.setViewedComponent(marker_list_component, true);
+        markerlistViewport.setAlwaysOnTop(true);
+        markerlistViewport.setScrollBarThickness(10);
+        addAndMakeVisible(markerlistViewport);
+
         // Add buttons
         for (auto* btn : { &loadButton, &restartButton  , &stopButton,
                            &muteButton, &playPauseButton, &toEnd,
@@ -127,7 +137,7 @@
         else return;
 
         if (session.isVoid()) return;
-        if (session["last_audio_path"].isVoid() ||
+        if (
             session["playlist"].isVoid() ||
             session["last_played_index"].isVoid() ||
             session["timestamp"].isVoid())
@@ -152,6 +162,7 @@
             player.setPosition((double)session["timestamp"]);
             player.play_pause();
         }
+
 
         juce::Array<juce::var>* markers_from_json_file = session["markers"].getArray();
         if (markers_from_json_file == nullptr) return;
@@ -252,7 +263,7 @@
 
         // Animate the component to the target bounds over 300ms
         animator.animateComponent(
-            &playlist_component,  // Component to animate
+            &playlistViewport,  // Component to animate
             targetBounds,         // Target position and size
             1.0f,                 // Target opacity (1.0 = fully visible)
             300,                  // Time in milliseconds
@@ -280,7 +291,7 @@
         }
 
         animator.animateComponent(
-            &markers_list_component,
+            &markerlistViewport,
             targetBounds,
             1.0f,
             300,
@@ -301,8 +312,8 @@
         deleteButton->setButtonText("X");
         deleteButton->addListener(this);
 
-        playlist_component.addAndMakeVisible(newEntry);
-        playlist_component.addAndMakeVisible(deleteButton);
+        playlist_component->addAndMakeVisible(newEntry);
+        playlist_component->addAndMakeVisible(deleteButton);
 
         playlist_buttons.push_back(newEntry);
         playlist_delete_buttons.push_back(deleteButton);
@@ -321,8 +332,8 @@
         deleteButton->setButtonText("X");
         deleteButton->addListener(this);
 
-        markers_list_component.addAndMakeVisible(newEntry);
-        markers_list_component.addAndMakeVisible(deleteButton);
+        marker_list_component->addAndMakeVisible(newEntry);
+        marker_list_component->addAndMakeVisible(deleteButton);
 
         marker_buttons.push_back(newEntry);
         marker_delete_buttons.push_back(deleteButton);
@@ -359,8 +370,8 @@
         if (index < player.getIndex()) {
             player.setIndex(player.getIndex()-1);
         }
-        playlist_component.removeChildComponent(playlist_buttons[index]);
-        playlist_component.removeChildComponent(playlist_delete_buttons[index]);
+        playlist_component->removeChildComponent(playlist_buttons[index]);
+        playlist_component->removeChildComponent(playlist_delete_buttons[index]);
         delete playlist_buttons[index];
         delete playlist_delete_buttons[index];
         playlist_buttons.erase(playlist_buttons.begin()+index);
@@ -371,7 +382,7 @@
     void PlayerGUI::display_markers() {
         if (!markers_added) {
             for (auto p : markers_pos) {
-                add_marker(p);
+                add_marker(p, 0);
             }
             markers_pos.clear();
             markers_added = 1;
@@ -415,9 +426,9 @@
         aIndex = bIndex = -1;
     }
 
-    void PlayerGUI::add_marker(double pos)
+    void PlayerGUI::add_marker(double pos, bool f)
     {
-        if (!markers_visible) return;
+        if (f && !markers_visible) return;
         if (player.getIndex() == -1) return;
         auto& lf = positionSlider.getLookAndFeel();
         auto layout = lf.getSliderLayout(positionSlider);
@@ -508,21 +519,23 @@
         int toggleButtonW = 100;
         int toggleButtonH = 40;
 
-        panelWidth = getWidth() / 3;
-        panelHeight = getHeight() / 3;
-
-        if (playlist_componenet_visible)
-        {
-            playlist_component.setBounds(getWidth() - panelWidth, 0, panelWidth, panelHeight);
-        }
-        else
-        {
-            playlist_component.setBounds(getWidth(), 0, panelWidth, panelHeight);
-        }
+        panelWidth = 0.3*getWidth();
+        panelHeight = 0.15*getHeight();
 
         int buttonMargin = 10;
         int buttonHeight = 30;
-        int startY = 10; // Start at the top of the panel (or below the toggle button if it's inside the panel)
+        int startY = 10;
+
+        if (playlist_componenet_visible)
+        {
+            playlistViewport.setBounds(getWidth() - panelWidth, 0, panelWidth, panelHeight);
+            playlistViewport.setScrollBarsShown(true, false);
+        }
+
+        // Make sure the viewed component size is updated
+        int height = std::max(panelHeight, (int)playlist_buttons.size() * (buttonHeight + buttonMargin));
+        playlist_component->setSize(panelWidth, height);
+
 
         const int deleteButtonWidth = 30;
 
@@ -540,14 +553,15 @@
                 buttonHeight);
         }
 
+
         if (markers_list_visible)
         {
-            markers_list_component.setBounds(0, 0, panelWidth, panelHeight);
+            markerlistViewport.setBounds(0, 0, panelWidth, panelHeight);
+            markerlistViewport.setScrollBarsShown(true, false);
         }
-        else
-        {
-            markers_list_component.setBounds(0, 0, 0, 0);
-        }
+
+        height = std::max(panelHeight, (int)marker_buttons.size() * (buttonHeight + buttonMargin));
+        marker_list_component->setSize(panelWidth, height);
 
         for (int i = 0; i < marker_buttons.size(); ++i) {
             marker_buttons[i]->setBounds(buttonMargin,
@@ -633,14 +647,14 @@
         else if (button == &setAButton)
         {
             double pos = player.getPosition();
-            add_marker(pos);
+            add_marker(pos, 1);
             aIndex = markers.size() - 1; // remember where marker is
             
         }
         else if (button == &setBButton)
         {
             double pos = player.getPosition();
-            add_marker(pos);
+            add_marker(pos, 1);
             bIndex = markers.size() - 1; 
 
             // activate segment looping:
@@ -662,7 +676,7 @@
             display_playlist_menu();
         }
         else if (button == &addMarker) {
-            add_marker(positionSlider.getValue());
+            add_marker(positionSlider.getValue(), 1);
         }
         else if (button == &displayMarkers) {
             markers_visible ^= 1;
@@ -738,7 +752,7 @@
                 }
                 if (event.getCurrentModifiers().isRightButtonDown())
                 {
-                    add_marker(current_value);
+                    add_marker(current_value, 1);
                 }
             }
         }
@@ -783,6 +797,9 @@
 
     void PlayerGUI::timerCallback()
     {
+        panelWidth = 0.3 * getWidth();
+        panelHeight = 0.15 * getHeight();
+
         if (player.getIndex() == -1) {
             positionSlider.setRange(0.0, 0.0, juce::dontSendNotification);
             positionSlider.setValue(0.0, juce::dontSendNotification);

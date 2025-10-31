@@ -27,7 +27,7 @@ public:
     void delete_button(int index);
     void display_markers();
     void clear_markers();
-    void add_marker(double pos);
+    void add_marker(double pos, bool f);
     void display_markers_menu();
     void add_markers_list_entry(std::string text);
     void delete_marker(int index);
@@ -35,7 +35,6 @@ public:
 private:
     //-------Global variables-------
     PlayerAudio& player;
-    bool playlist_componenet_visible = true;
     std::vector<juce::TextButton*> playlist_buttons;
     std::vector<juce::TextButton*> playlist_delete_buttons;
     std::vector<juce::TextButton*> marker_buttons;
@@ -44,10 +43,13 @@ private:
     std::vector<marker*> markers;
     std::vector<juce::Label*> markers_labels;
     std::vector<double> markers_pos;
-    juce::Component playlist_component;
 
-    juce::Component markers_list_component;
-    bool markers_list_visible = false;
+    juce::Component* playlist_component, *marker_list_component;
+    juce::Viewport playlistViewport, markerlistViewport;
+
+    bool playlist_componenet_visible = true, markers_list_visible = false;
+
+
 
     // -------Buttons-------------
     juce::TextButton loadButton{ "Load Audio" };
