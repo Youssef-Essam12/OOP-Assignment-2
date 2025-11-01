@@ -7,6 +7,7 @@
 #include "GUI Components/BottomControlComp.h"
 #include "GUI Components/PlaylistViewComp.h"
 #include "GUI Components/EditorComp.h"
+#include "GUI Components/MarkerComp.h"
 #include "Extra Functionalities/Marker.h"
 
 
@@ -42,6 +43,9 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : audio_player(audio_player) {
 
     editorView = std::make_unique<EditorComp>(audio_player);
     addAndMakeVisible(editorView.get());
+
+    markerView = std::make_unique<MarkerComp>(audio_player);
+    addAndMakeVisible(markerView.get());
 
     setView(View::Normal);
     startTimerHz(30);
@@ -83,6 +87,9 @@ void PlayerGUI::resized()
     case View::Editor:
         editorView->setBounds(bounds);
         break;
+    case View::Marker:
+        markerView->setBounds(bounds);
+        break;
     }
     
 }
@@ -100,6 +107,9 @@ void PlayerGUI::setView(View newView)
     case View::Editor:
         editorView->setVisible(false);
         break;
+    case View::Marker:
+        markerView->setVisible(false);
+        break;
     }
 
     currentView = newView;
@@ -114,6 +124,9 @@ void PlayerGUI::setView(View newView)
         break;
     case View::Editor:
         editorView->setVisible(true);
+        break;
+    case View::Marker:
+        markerView->setVisible(true);
         break;
     }
     resized();
