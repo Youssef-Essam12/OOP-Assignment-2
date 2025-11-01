@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include "../PlayerAudio.h"
 #include "NormalViewComp.h"
+#include "PlaylistEntry.h"
 
 #include <functional>
 
@@ -28,7 +29,7 @@ private:
     PlayerAudio& audio_player;
     std::vector<juce::TextButton*> playlist_buttons;
     std::vector<juce::TextButton*> playlist_delete_buttons;
-
+    std::vector<PlaylistEntry*> playlist_entries;
     std::vector<std::string> playlist_paths;
 
     juce::Component* playlist_component;

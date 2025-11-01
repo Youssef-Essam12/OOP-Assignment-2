@@ -51,19 +51,17 @@ void PlaylistViewComp::display_playlist_menu() {
 void PlaylistViewComp::add_playlist_entry(const juce::File& file) {
     juce::String fileName = file.getFileNameWithoutExtension();
 
-    auto* newEntry = new juce::TextButton(fileName);
-    newEntry->setButtonText(fileName);
-    newEntry->addListener(this);
+    PlaylistEntry* newEntry = new PlaylistEntry(fileName, "Esmail", audio_player.getAudioCount()-1);
+    newEntry->onClick = [&](int i) {
+        this->onAudioSelected(i);
+    };
 
-    auto* deleteButton = new juce::TextButton();
-    deleteButton->setButtonText("X");
-    deleteButton->addListener(this);
+    newEntry->onDeleteClick = [&](int i) {
+        delete_button(i);
+    };
 
     playlist_component->addAndMakeVisible(newEntry);
-    playlist_component->addAndMakeVisible(deleteButton);
-
-    playlist_buttons.push_back(newEntry);
-    playlist_delete_buttons.push_back(deleteButton);
+    playlist_entries.emplace_back(newEntry);
 
     playlist_paths.push_back(file.getFullPathName().toStdString());
 
@@ -81,80 +79,58 @@ void PlaylistViewComp::delete_button(int index)
     if (index < audio_player.getIndex()) {
         audio_player.setIndex(audio_player.getIndex() - 1);
     }
-    playlist_component->removeChildComponent(playlist_buttons[index]);
-    playlist_component->removeChildComponent(playlist_delete_buttons[index]);
-    delete playlist_buttons[index];
-    delete playlist_delete_buttons[index];
-    playlist_buttons.erase(playlist_buttons.begin() + index);
-    playlist_delete_buttons.erase(playlist_delete_buttons.begin() + index);
-    playlist_paths.erase(playlist_paths.begin() + index);
+    if (index >= 0 && index < playlist_entries.size()) {
+        playlist_component->removeChildComponent(playlist_entries[index]);
+        delete playlist_entries[index];
+        playlist_entries.erase(playlist_entries.begin() + index);
+        playlist_paths.erase(playlist_paths.begin() + index);
+        audio_player.delete_button(index);
+    }
+    for (int i = 0; i < (int)playlist_entries.size(); i++) playlist_entries[i]->setIndex(i);
+    resized();
+    repaint();
 }
 
 void PlaylistViewComp::resized() {
-    int panelWidth = 0.3 * getWidth();
-    int panelHeight = 0.15 * getHeight();
+    const int margin = 10;
+    auto parentBounds = getLocalBounds();
 
+    int panelWidth = parentBounds.getWidth();
+    int panelHeight = parentBounds.getHeight();
+
+    auto viewportArea = parentBounds.reduced(margin);
+    playlistViewport.setBounds(viewportArea);
+
+    playlistViewport.setScrollBarsShown(true, false);
+
+    int buttonHeight = 40;
     int buttonMargin = 10;
-    int buttonHeight = 30;
-    int startY = 10;
 
-    if (playlist_componenet_visible)
-    {
-        playlistViewport.setBounds(getWidth() - panelWidth, 0, panelWidth, panelHeight);
-        playlistViewport.setScrollBarsShown(true, false);
-    }
+    int contentWidth = viewportArea.getWidth();
 
-    // Make sure the viewed component size is updated
-    int height = std::max(panelHeight, (int)playlist_buttons.size() * (buttonHeight + buttonMargin));
-    playlist_component->setSize(panelWidth, height);
+    int requiredHeight = (int)playlist_entries.size() * (buttonHeight + buttonMargin) + buttonMargin;
+    int contentHeight = std::max(viewportArea.getHeight(), requiredHeight);
 
+    playlist_component->setSize(contentWidth, contentHeight);
+    const int entryComponentWidth = contentWidth - (2 * margin);
+    int currentY = margin;
 
-    const int deleteButtonWidth = 30;
+    for (int i = 0; i < playlist_entries.size(); ++i) {
 
-    const int entryButtonWidth = panelWidth - (3 * buttonMargin) - deleteButtonWidth;
-    for (int i = 0; i < playlist_buttons.size(); ++i) {
-        playlist_buttons[i]->setBounds(buttonMargin,
-            startY + i * (buttonHeight + buttonMargin),
-            panelWidth - 2 * buttonMargin,
+        playlist_entries[i]->setBounds(margin,
+            currentY,
+            entryComponentWidth,
             buttonHeight);
 
-        int yPos = startY + i * (buttonHeight + buttonMargin);
-        playlist_delete_buttons[i]->setBounds(buttonMargin + entryButtonWidth + buttonMargin, // X position: Main Button End + Margin
-            yPos,
-            deleteButtonWidth,
-            buttonHeight);
+        currentY += buttonHeight + buttonMargin;
     }
-
 }
 
 void PlaylistViewComp::paint(juce::Graphics& g) {
-    g.fillAll(juce::Colours::blue);
+    g.fillAll(juce::Colour(0xff1c1c1c));
 }
-
-//
-//void PlaylistViewComp::update(juce::File& file)
-//{
-//
-//}
 
 
 void PlaylistViewComp::buttonClicked(juce::Button* button) {
-    for (size_t i = 0; i < playlist_buttons.size(); ++i) {
-        if (button == playlist_buttons[i]) {
-            if (i == audio_player.getIndex()) break;
-            const juce::File& file = audio_player.getPlaylistFile(i);
-            if (file.existsAsFile()) {
-                onAudioSelected(i);
-                //thumbnail.setSource(new juce::FileInputSource(file))
-            }
-            break;
-        }
-        else if (button == playlist_delete_buttons[i]) {
-            delete_button(i);
-            audio_player.delete_button(i);
-            resized();
-            repaint();
-            break;
-        }
-    }
+
 }
