@@ -6,6 +6,7 @@
 #include "GUI Components/LeftNavComp.h"
 #include "GUI Components/BottomControlComp.h"
 #include "GUI Components/PlaylistViewComp.h"
+#include "GUI Components/EditorComp.h"
 #include "Extra Functionalities/Marker.h"
 
 
@@ -38,6 +39,9 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : audio_player(audio_player) {
 
     controlBar = std::make_unique<BottomControlComp>(audio_player);
     addAndMakeVisible(controlBar.get());
+
+    editorView = std::make_unique<EditorComp>(audio_player);
+    addAndMakeVisible(editorView.get());
 
     setView(View::Normal);
     startTimerHz(30);
@@ -77,7 +81,7 @@ void PlayerGUI::resized()
         playlistView->setBounds(bounds);
         break;
     case View::Editor:
-        // editorView->setBounds(bounds);
+        editorView->setBounds(bounds);
         break;
     }
     
@@ -94,7 +98,7 @@ void PlayerGUI::setView(View newView)
         playlistView->setVisible(false);
         break;
     case View::Editor:
-        // editorView->setVisible(true);
+        editorView->setVisible(false);
         break;
     }
 
@@ -109,7 +113,7 @@ void PlayerGUI::setView(View newView)
         playlistView->setVisible(true);
         break;
     case View::Editor:
-        // editorView->setVisible(true);
+        editorView->setVisible(true);
         break;
     }
     resized();

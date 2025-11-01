@@ -9,6 +9,7 @@ class LeftNavComp;
 class TopBarComp;
 class NormalViewComp;
 class PlaylistViewComp;
+class EditorComp;
 
 
 class PlayerGUI : public juce::Component,
@@ -38,6 +39,7 @@ private:
     // View components
     std::unique_ptr<NormalViewComp> normalView;
     std::unique_ptr<PlaylistViewComp> playlistView;
+    std::unique_ptr<EditorComp> editorView;
 
     View currentView = View::Normal;
 

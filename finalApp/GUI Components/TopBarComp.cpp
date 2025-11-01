@@ -31,6 +31,7 @@ void TopBarComp::buttonClicked(juce::Button* button) {
             [this](const juce::FileChooser& fc)
             {
                 auto file = fc.getResult();
+                if (!file.existsAsFile()) return;
                 if (audio_player.isFileAlreadyLoaded(file))
                 {
                     juce::AlertWindow::showMessageBoxAsync(
