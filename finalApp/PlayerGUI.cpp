@@ -30,6 +30,7 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : audio_player(audio_player) {
     playlistView->onAudioSelected= [&](int index) {
         audio_player.playFile(index);
         normalView->update(audio_player.getPlaylistFile(index));
+        markerView->clear_markers();
     };
 
     navBar = std::make_unique<LeftNavComp>();
@@ -39,12 +40,15 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : audio_player(audio_player) {
         this->setView(viewArr[view_index]);
     };
 
-
     markerView = std::make_unique<MarkerComp>(audio_player);
     addAndMakeVisible(markerView.get());
 
     markerView->add_marker_bottomBar = [&](double pos) {
         controlBar->add_marker(pos);
+    };
+
+    markerView->clear_markers_buttomBar = [&]() {
+        controlBar->clear_markers();
     };
 
     controlBar = std::make_unique<BottomControlComp>(audio_player);
@@ -58,6 +62,10 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : audio_player(audio_player) {
         juce::String title = "Marker " + juce::String(MarkerEntry::get_marker_cnt());
 
         markerView->add_markers_list_entry(title, timeText, MarkerEntry::get_marker_cnt(), currentPosition);
+    };
+
+    controlBar->add_loaded_markers = [&]() {
+        markerView->add_loaded_markers();
     };
 
     editorView = std::make_unique<EditorComp>(audio_player);
@@ -102,14 +110,13 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : audio_player(audio_player) {
     juce::Array<juce::var>* markers_from_json_file = session["markers"].getArray();
     if (markers_from_json_file == nullptr) return;
     for (auto &p : *markers_from_json_file) {
-        double currentPosition = p;
-        int minutes = (int)currentPosition / 60;
-        int seconds = (int)currentPosition % 60;
-        juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
-        juce::String title = "Marker " + juce::String(MarkerEntry::get_marker_cnt());
-
-        markerView->add_markers_list_entry(title, timeText, MarkerEntry::get_marker_cnt(), currentPosition);
+        markerView->add_marker_pos((double)p);
     }
+    controlBar = std::make_unique<BottomControlComp>(audio_player);
+    addAndMakeVisible(controlBar.get());
+
+    setView(View::Normal);
+    startTimerHz(30);
 }
 
 PlayerGUI::~PlayerGUI()
@@ -173,6 +180,7 @@ void PlayerGUI::resized()
         break;
     case View::Marker:
         markerView->setBounds(bounds);
+        // editorView->setBounds(bounds);
         break;
     }
     
@@ -193,6 +201,7 @@ void PlayerGUI::setView(View newView)
         break;
     case View::Marker:
         markerView->setVisible(false);
+        // editorView->setVisible(true);
         break;
     }
 
@@ -211,6 +220,7 @@ void PlayerGUI::setView(View newView)
         break;
     case View::Marker:
         markerView->setVisible(true);
+        // editorView->setVisible(true);
         break;
     }
     resized();
@@ -225,5 +235,4 @@ void PlayerGUI::timerCallback()
         controlBar->update();
         normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
     }
-    if (audio_player.getOriginalIndex() != audio_player.getIndex()) markerView->clear_markers();
 }

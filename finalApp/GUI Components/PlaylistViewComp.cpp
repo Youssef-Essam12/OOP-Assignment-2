@@ -27,6 +27,16 @@ void PlaylistViewComp::display_playlist_menu() {
     int panelWidth = 50, panelHeight = 50;
     
     targetBounds = juce::Rectangle<int>(getWidth() - panelWidth, 0, panelWidth, panelHeight);
+    if (playlist_componenet_visible)
+    {
+        // Target is ON-screen
+        targetBounds = juce::Rectangle<int>(getWidth() - panelWidth, 0, panelWidth, panelHeight);
+    }
+    else
+    {
+        // Target is OFF-screen (to the right)
+        targetBounds = juce::Rectangle<int>(getWidth(), 0, panelWidth, panelHeight);
+    }
 
     // Animate the component to the target bounds over 300ms
     animator.animateComponent(

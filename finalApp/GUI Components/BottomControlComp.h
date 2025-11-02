@@ -30,30 +30,45 @@ public:
     void update(); // Called by PlayerGUI's timer
 
     void add_marker(double pos);
-    std::function<void(double)> add_marker_in_markerView;
+    void clear_markers();
 
-private:    
+    std::function<void(double)> add_marker_in_markerView;
+    std::function<void()> add_loaded_markers;
+
+private:
+    
     PlayerAudio& audio_player;
 
     // Sliders
     juce::Slider positionSlider;
+    juce::Slider segmentSlider;
 
     // Text Buttons
     juce::TextButton backwardButton{ "-10s" };
     juce::TextButton forwardButton{ "+10s" };
-
 
     // Check Boxes
     juce::ToggleButton muteToggle{ "Mute" };
     juce::ToggleButton repeatToggle{ "Repeat" };
     juce::ToggleButton shuffleToggle{ "Shuffle" };
     juce::ToggleButton abSegmentToggle{ "Loop Segment" };
+    juce::ToggleButton markerToggle{ "Markers" };
+
+    // Segment looping bar
+    bool segmentBarVisible = false;   // controls visibility
+    bool segmentASet = false;
+    double segmentA = -1.0;
+    double segmentB = -1.0;
     
     // Circular play button
     PlayPauseLook pp_customlook;
     juce::TextButton playPauseButton{ "" };
 
     std::vector<Marker*> markers;
+    std::vector<juce::Label*> markersLabels;
+
+    bool added_markers = 0;
+    bool markers_visible = 0;
 };
 
 

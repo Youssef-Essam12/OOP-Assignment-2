@@ -44,12 +44,12 @@ void MarkerComp::display_markers_menu() {
 
 void MarkerComp::add_markers_list_entry(juce::String title, juce::String timeText, int i, double marker_time) {
     MarkerEntry* newEntry = new MarkerEntry(title, timeText, i, marker_time);
-    newEntry->onClick = [&](int i) {
+    newEntry->onClick = [this](int i) {
         double ratio = markerList_entries[i]->get_pos() / audio_player.getOriginalLength();
         double new_pos = ratio * audio_player.getLength();
         audio_player.setPosition(new_pos);
     };
-    newEntry->onDeleteClick = [&](int i) {
+    newEntry->onDeleteClick = [this](int i) {
         delete_marker(i);
     };
     marker_list_component->addAndMakeVisible(newEntry);
@@ -89,8 +89,8 @@ void MarkerComp::add_loaded_markers()
         juce::String title = "Marker " + juce::String(MarkerEntry::get_marker_cnt());
 
         add_markers_list_entry(title, timeText, markerList_entries.size(), currentPosition);
-        marker_pos.clear();
     }
+    marker_pos.clear();
 }
 
 void MarkerComp::clear_markers() {
@@ -99,6 +99,7 @@ void MarkerComp::clear_markers() {
         delete m;
     }
     markerList_entries.clear();
+    clear_markers_buttomBar();
     resized();
     repaint();
 }
@@ -154,12 +155,19 @@ void MarkerComp::paint(juce::Graphics& g) {
 
 void MarkerComp::buttonClicked(juce::Button* button) {
     if (button == &addMarkerButton) {
+        if (audio_player.getIndex() == -1) return;
         double currentPosition = audio_player.getPosition();
-        int minutes = (int)currentPosition / 60;
-        int seconds = (int)currentPosition % 60;
+        double originalPosition = (currentPosition / audio_player.getLength()) * audio_player.getOriginalLength();
+
+        int minutes = (int)originalPosition / 60;
+        int seconds = (int)originalPosition % 60;
         juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
         juce::String title = "Marker " + juce::String(MarkerEntry::get_marker_cnt());
 
-        add_markers_list_entry(title, timeText, markerList_entries.size(), currentPosition);
+        add_markers_list_entry(title, timeText, markerList_entries.size(), originalPosition);
+    }
+    else if (button == &clearMarkersButton) {
+        if (audio_player.getIndex() == -1) return;
+        clear_markers();
     }
 }

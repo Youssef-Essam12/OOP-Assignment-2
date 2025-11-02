@@ -17,7 +17,7 @@ public:
         g.fillRoundedRectangle(bounds, cornerRadius);
 	}
 	void mouseDown(const juce::MouseEvent& event) override {
-		onClick(pos, length);
+		onClick(pos);
 	}
 	double get_pos() {
 		return this->pos;
@@ -31,7 +31,7 @@ public:
 	static void set_Marker_cnt(int c) {
 		Marker_cnt = c;
 	}
-	std::function<void(double, double)> onClick;
+	std::function<void(double)> onClick;
 private:
 	static int Marker_cnt;
 	double offset, pos, length;

@@ -29,7 +29,7 @@ public:
     void clear_markers();
 
     std::function<void(double)> add_marker_bottomBar;
-
+    std::function<void()> clear_markers_buttomBar;
 private:
     PlayerAudio& audio_player;
 

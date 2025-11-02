@@ -43,7 +43,7 @@ void NormalViewComp::resized() {
 }
 
 void NormalViewComp::paint(juce::Graphics& g) {
-    g.fillAll(juce::Colours::lightcyan.withAlpha(0.3f));
+    g.fillAll(juce::Colour(0xff1c1c1c));
     auto waveform = juce::Rectangle<int>(20, 170, getWidth() - 40, 300);
 
     g.setColour(juce::Colours::lightgrey);

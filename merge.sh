@@ -9,13 +9,14 @@ fi
 FIRST="$1"
 ANCESTOR="$2"
 SECOND="$3"
+SUBDIR="Extra Functionalities"
 
-for file in "$FIRST"/*; do
+for file in "$FIRST/$SUBDIR"/*; do
 	if [ -f "$file" ]; then
 
         filename=$(basename "$file")
-        second="$SECOND/$filename"
-        ancestor="$ANCESTOR/$filename"
+        second="$SECOND/$SUBDIR/$filename"
+        ancestor="$ANCESTOR/$SUBDIR/$filename"
 
         touch "$ancestor"
 
@@ -37,4 +38,3 @@ for file in "$FIRST"/*; do
         echo "Could not open file: $file\n"
     fi
 done
-
