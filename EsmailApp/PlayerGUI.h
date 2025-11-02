@@ -1,7 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PlayerAudio.h"
-#include <functional>
 
 
 
@@ -10,42 +9,27 @@ class LeftNavComp;
 class TopBarComp;
 class NormalViewComp;
 class PlaylistViewComp;
-class MinimizedViewComp;
-class MixerViewComp;
-class FloatingVolumeSlider;
-
 
 
 class PlayerGUI : public juce::Component,
-    public juce::Timer,
-    public juce::ComponentListener
+    public juce::Timer
 {
 public:
     
-    PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, PlayerAudio& mixer_player_2);
+    PlayerGUI(PlayerAudio& audio_player);
     ~PlayerGUI();
-
-    void handleMinimisedStateChange(bool isMinimised);
 
     void paint(juce::Graphics& g) override;
     void resized() override;
     void timerCallback() override;
-    
-    double getMixPercentage();
 
-    enum class View { Normal, Playlist, Editor, Marker, Mixer, Minimized};
-
-    //std::function<PlayerAudio* (int player)> retreive_player;
-
+    enum class View { Normal, Playlist, Editor, Marker, Mixer };
 private:
     void setView(View newView);
     
     PlayerAudio& audio_player;
 
-    PlayerAudio& mixer_player_1;
-    PlayerAudio& mixer_player_2;
-
-    View viewArr[5] = { View::Normal, View::Playlist, View::Editor, View::Mixer, View::Marker };
+    View viewArr[5] = { View::Normal, View::Playlist, View::Editor, View::Marker, View::Mixer};
     // Bar components
     std::unique_ptr<TopBarComp> topBar;
     std::unique_ptr<LeftNavComp> navBar;
@@ -54,10 +38,6 @@ private:
     // View components
     std::unique_ptr<NormalViewComp> normalView;
     std::unique_ptr<PlaylistViewComp> playlistView;
-    std::unique_ptr<MinimizedViewComp> miniView;
-    std::unique_ptr<MixerViewComp> mixerView;
-    
-    std::unique_ptr<FloatingVolumeSlider> volume_slider;
 
     View currentView = View::Normal;
 

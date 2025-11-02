@@ -1,386 +1,233 @@
 #pragma once
 #include "PlayerGUI.h"
+#include "MainComponent.h"
 
-PlayerGUI::PlayerGUI(PlayerAudio& audio_player) : player(audio_player),
-thumbnailCache(5),
-thumbnail(512, formatManager, thumbnailCache) {
+#include "GUI Components/TopBarComp.h"
+#include "GUI Components/NormalViewComp.h"
+#include "GUI Components/LeftNavComp.h"
+#include "GUI Components/BottomControlComp.h"
+#include "GUI Components/PlaylistViewComp.h"
+#include "GUI Components/MinimizedViewComp.h"
+#include "GUI Components/MixerViewComp.h"
+#include "Extra Functionalities/Marker.h"
+#include "Extra Functionalities/FloatingVolumeSlider.h"
 
 
-    addAndMakeVisible(playlist_component);
-    formatManager.registerBasicFormats();
-    thumbnail.addChangeListener(this);
-    playlist_component.setAlwaysOnTop(true);
-    // Add buttons
-    for (auto* btn : { &loadButton, &restartButton  , &stopButton, 
-                       &muteButton, &playPauseButton, &toEnd, 
-                       &toStart   , &backward       , &forward, 
-                       &loopButton, &playlist_menu })
-    {
-        btn->addListener(this);
-        addAndMakeVisible(btn);
-    }
 
-    // Add sliders
-    std::vector<juce::Slider*> sliders = {
-        &volumeSlider,
-        &speedSlider,
-        &positionSlider
+PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, PlayerAudio& mixer_player_2)
+    : audio_player(audio_player),
+    mixer_player_1(mixer_player_1),
+    mixer_player_2(mixer_player_2)
+{
+
+    topBar = std::make_unique<TopBarComp>(audio_player);
+    addAndMakeVisible(topBar.get());
+
+    topBar->onFileLoaded = [&](const juce::File& file) {
+        playlistView->add_playlist_entry(file);
     };
-    for (auto *slider : sliders) {
-        slider->setRange(0.0, 100, 1);
-        slider->setValue(20);
-        slider->addListener(this);
-        addAndMakeVisible(slider);
-        slider->setTextBoxStyle(juce::Slider::TextBoxRight,
-            false, // read-only
-            60,    // Box width
-            slider->getTextBoxHeight());
 
-        slider->setTextValueSuffix(" %");
+    miniView = std::make_unique<MinimizedViewComp>(audio_player);
+    addAndMakeVisible(miniView.get());
+
+    normalView = std::make_unique<NormalViewComp>(audio_player);
+    addAndMakeVisible(normalView.get());
+
+    playlistView = std::make_unique<PlaylistViewComp>(audio_player);
+    addAndMakeVisible(playlistView.get());
+
+    playlistView->onAudioSelected= [&](int index) {
+        audio_player.playFile(index);
+        normalView->update(audio_player.getPlaylistFile(index));
+    };
+
+    navBar = std::make_unique<LeftNavComp>();
+    addAndMakeVisible(navBar.get());
+
+    navBar->set_view = [&](int view_index) {
+        this->setView(viewArr[view_index]);
+    };
+
+    controlBar = std::make_unique<BottomControlComp>(audio_player);
+    addAndMakeVisible(controlBar.get());
+
+    mixerView = std::make_unique<MixerViewComp>(mixer_player_1, mixer_player_2);
+    addAndMakeVisible(mixerView.get());
+
+    volume_slider = std::make_unique<FloatingVolumeSlider>(audio_player);
+    addAndMakeVisible(volume_slider.get());
+    volume_slider->toFront(true);
+
+    if (auto* topLevel = getTopLevelComponent())
+    {
+        topLevel->addComponentListener(this);
     }
 
-    positionSlider.textFromValueFunction = [&](double value) {
-        std::string result = "";
+    normalView->setVisible(false);
+    playlistView->setVisible(false);
+    // editorView->setVisible(false);
+    miniView->setVisible(false);
 
-		int minutes = static_cast<int>(value) / 60;
-		int seconds = value - (minutes * 60);
-		
-        std::string seconds_string = std::to_string(seconds);
-		if (seconds < 10) seconds_string = "0" + seconds_string;
-
-        std::string minutes_string = std::to_string(minutes);
-        if (minutes < 10) minutes_string = "0" + minutes_string;
-        
-        return minutes_string + ":" + seconds_string ;
-	};
-
-    speedSlider.setRange(30, 200, 1);
-    speedSlider.setValue(100);
-
-    positionSlider.setNumDecimalPlacesToDisplay(2);
-    positionSlider.setTextValueSuffix(" s");
+    setView(View::Normal);
 
     startTimerHz(30);
-    // Add labels
-    std::vector<juce::Label*> labels = {
-        &volumeLabel,
-        &speedLabel,
-		&titleLabel,
-		&artistLabel
-    };
-    for (auto* label : labels) {
-        addAndMakeVisible(label);
-    }
-	
-    volumeLabel.setText("Volume", juce::dontSendNotification);
-    speedLabel.setText("Speed", juce::dontSendNotification);
-    
-    titleLabel.setFont(juce::Font(18.0f, juce::Font::bold));
-    titleLabel.setJustificationType(juce::Justification::centred);
-
-    artistLabel.setFont(juce::Font(14.0f));
-    artistLabel.setJustificationType(juce::Justification::centred);
-    
-    
 }
 
-PlayerGUI::~PlayerGUI() {
+PlayerGUI::~PlayerGUI()
+{
     stopTimer();
 
-    // Clean up dynamically created playlist entry buttons
-    for (auto* btn : playlist_buttons) {
-        delete btn;
+    if (auto* topLevel = getTopLevelComponent())
+    {
+        topLevel->removeComponentListener(this);
     }
-    playlist_buttons.clear();
 }
 
-void PlayerGUI::paint(juce::Graphics& g) {
-    g.fillAll(juce::Colours::darkgrey);
+double PlayerGUI::getMixPercentage() {
+    return mixerView->getPercentage();
+}
 
-    //player.setSpeed(150);
-    auto waveform = juce::Rectangle<int>(20, 200, getWidth() - 40, 300);
-
-    g.setColour(juce::Colours::lightgrey);
-    g.drawRect(waveform);
-
-    if (thumbnail.getNumChannels() == 0) {
-        g.setColour(juce::Colours::white);
-        g.drawFittedText("No Audio Loaded", waveform, juce::Justification::centred, 1);
+void PlayerGUI::handleMinimisedStateChange(bool isMinimised) {
+    if (isMinimised)
+    {
+        setView(View::Minimized);
     }
-    else {
-        g.setColour(juce::Colours::hotpink);
-        thumbnail.drawChannels(g, waveform, 0.0, thumbnail.getTotalLength(), 1.0f);
+    else
+    {
+        setView(View::Normal);
+    }
+}
 
-        double pos = player.getPosition();
-        double len = player.getLength();
 
-        if (len > 0) {
-            float current_pos = (float)(waveform.getX() + (pos / len) * waveform.getWidth());
-            g.setColour(juce::Colours::red);
-            g.drawLine(current_pos, (float)waveform.getY(), current_pos, (float)waveform.getBottom(), 2.0f);
+void PlayerGUI::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colours::white);
+}
+
+
+
+void PlayerGUI::resized()
+{
+    auto bounds = getLocalBounds();
+
+    int topBarHeight = 0.05 * getWidth();
+    int leftBarWidth = 0.1 * getWidth();
+    int bottomBarHeight = 0.05 * getWidth();
+
+    int sliderWidth = 30;
+    int sliderHeight = 500; 
+
+    int xPos = bounds.getRight() - 40; 
+    int yPos = bounds.getCentreY() - (sliderHeight / 2); 
+
+    volume_slider->setBounds(xPos, yPos, sliderWidth, sliderHeight);
+
+    if (currentView == View::Minimized)
+    {
+        miniView->setBounds(bounds);
+    }
+    else if (currentView == View::Mixer)
+    {
+        navBar->setBounds(bounds.removeFromLeft(leftBarWidth));
+        mixerView->setBounds(bounds); 
+    }
+    else 
+    {
+        navBar->setBounds(bounds.removeFromLeft(leftBarWidth));
+        topBar->setBounds(bounds.removeFromTop(topBarHeight));
+        controlBar->setBounds(bounds.removeFromBottom(bottomBarHeight));
+
+        switch (currentView)
+        {
+        case View::Normal:
+            normalView->setBounds(bounds);
+            break;
+        case View::Playlist:
+            playlistView->setBounds(bounds);
+            break;
+        case View::Editor:
+            // editorView->setBounds(bounds);
+            break;
         }
     }
 }
 
-void PlayerGUI::display_playlist_menu() {
+void PlayerGUI::setView(View newView)
+{
 
-    playlist_componenet_visible = !playlist_componenet_visible;
-
-    juce::ComponentAnimator& animator = juce::Desktop::getInstance().getAnimator();
-    
-
-    juce::Rectangle<int> targetBounds;
-
-    if (playlist_componenet_visible)
+    auto* mainComp = findParentComponentOfClass<MainComponent>();
+    if (mainComp == nullptr)
     {
-        // Target is ON-screen
-        targetBounds = juce::Rectangle<int>(getWidth() - panelWidth, 0, panelWidth, panelHeight);
-    }
-    else
-    {
-        // Target is OFF-screen (to the right)
-        targetBounds = juce::Rectangle<int>(getWidth(), 0, panelWidth, panelHeight);
+        return;
     }
 
-    // Animate the component to the target bounds over 300ms
-    animator.animateComponent(
-        &playlist_component,  // Component to animate
-        targetBounds,         // Target position and size
-        1.0f,                 // Target opacity (1.0 = fully visible)
-        300,                  // Time in milliseconds
-        false,                // Use an ease-out curve
-        0.0,                  // Start velocity
-        0.0                   // End velocity
-    );
-}
+    normalView->setVisible(false);
+    playlistView->setVisible(false);
+    miniView->setVisible(false);
+    mixerView->setVisible(false);
+    // editorView->setVisible(false);
 
-void PlayerGUI::add_playlist_entry(const juce::File& file) {
-    juce::String fileName = file.getFileNameWithoutExtension();
+    topBar->setVisible(false);
+    navBar->setVisible(false);
+    controlBar->setVisible(false);
 
-    auto* newEntry = new juce::TextButton(fileName);
+    volume_slider->setVisible(true);
 
-    newEntry->setButtonText(fileName);
-    newEntry->addListener(this); 
+    if (currentView == View::Mixer && newView != View::Mixer) // leaving mixer
+    {
+        mixer_player_1.stop();
+        mixer_player_2.stop();
+        mainComp->setAudioMode(MainComponent::AudioMode::Normal);
+    }
 
-    playlist_component.addAndMakeVisible(newEntry);
-    playlist_buttons.push_back(newEntry);
+    currentView = newView;
+
+    if (currentView == View::Minimized)
+    {
+        miniView->setVisible(true);
+    }
+    else if (currentView == View::Mixer)
+    {
+        navBar->setVisible(true);
+        mixerView->setVisible(true);
+        audio_player.stop();
+        volume_slider->setVisible(false);
+        mainComp->setAudioMode(MainComponent::AudioMode::Mixer);
+    }
+    else 
+    {
+        topBar->setVisible(true);
+        navBar->setVisible(true);
+        controlBar->setVisible(true);
+
+        switch (currentView)
+        {
+        case View::Normal:
+            normalView->setVisible(true);
+            break;
+        case View::Playlist:
+            playlistView->setVisible(true);
+            break;
+        case View::Editor:
+            // editorView->setVisible(true);
+            break;
+        }
+    }
 
     resized();
-}
-
-void PlayerGUI::resized() {
- 
-    int buttons_w = 100;
-    int buttons_h = 50;
-
-    int button_margin = buttons_w * 0.40;
-    int buttons_x = (getWidth() - buttons_w) >> 1;
-    int buttons_y = getHeight() - 1.5 * button_margin;
-
-    int distance_factor = 3;
-
-    // Place buttons
-    {
-        int i = 1;
-        for (auto* btn : { &playPauseButton, 
-                           &forward, &backward, 
-                           & toEnd, &toStart,
-                           &muteButton,&restartButton, 
-                           &stopButton, &loopButton,
-                           &playlist_menu,& loadButton })
-        {
-            int factor = (i % 2 == 0 ? 1 : -1);
-            btn->setBounds(buttons_x + factor * (i / 2) * distance_factor * button_margin, buttons_y, buttons_w, buttons_h);
-            i++;
-        }
-    }
-    
-    int slider_w = getWidth() * 0.75;
-	int slider_h = 30;  
-    int slider_x = (getWidth() - slider_w) >> 1;
-	int slider_y = playPauseButton.getY() - button_margin - slider_h;
-
-    volumeSlider.setBounds  (slider_x, slider_y               , slider_w, slider_h);
-    speedSlider.setBounds   (slider_x, slider_y - 1 * slider_h, slider_w, slider_h);
-    positionSlider.setBounds(slider_x, slider_y - 3 * slider_h, slider_w, slider_h);
-
-    int label_w = 70;
-    int label_h = 50;
-    int label_margin = 20;
-    volumeLabel.setBounds(volumeSlider.getX(), volumeSlider.getY(), label_w, label_h);
-    speedLabel.setBounds(speedSlider.getX(), speedSlider.getY(), label_w, label_h);
-
-    titleLabel.setBounds(0, 50, getWidth(), label_h);
-    artistLabel.setBounds(0, 100, getWidth(), 20);
-
-    int toggleButtonW = 100;
-    int toggleButtonH = 40;
-
-    panelWidth = getWidth() / 3;
-    panelHeight = getHeight() / 3;
-
-    if (playlist_componenet_visible)
-    {
-        playlist_component.setBounds(getWidth() - panelWidth, 0, panelWidth, panelHeight);
-    }
-    else
-    {
-        playlist_component.setBounds(getWidth(), 0, panelWidth, panelHeight);
-    }
-
-    int buttonMargin = 10;
-    int buttonHeight = 30;
-    int startY = 10; // Start at the top of the panel (or below the toggle button if it's inside the panel)
-
-    // Layout the dynamically created buttons inside the 'playlist_component'
-    for (int i = 0; i < playlist_buttons.size(); ++i) {
-        playlist_buttons[i]->setBounds(buttonMargin,
-            startY + i * (buttonHeight + buttonMargin),
-            panelWidth - 2 * buttonMargin,
-            buttonHeight);
-    }
-}
-void PlayerGUI::buttonClicked(juce::Button* button) {
-
-    if (button == &loadButton)
-    {
-        juce::FileChooser chooser("Select audio files...",
-            juce::File{},
-            "*.wav;*.mp3");
-
-        fileChooser = std::make_unique<juce::FileChooser>(
-            "Select an audio file...",
-            juce::File{},
-            "*.wav;*.mp3");
-
-        fileChooser->launchAsync(
-            juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-            [this](const juce::FileChooser& fc)
-            {
-                auto file = fc.getResult();
-                if (player.isFileAlreadyLoaded(file))
-                {
-                    juce::AlertWindow::showMessageBoxAsync(
-                        juce::AlertWindow::WarningIcon,     // Icon type
-                        "File Already Loaded",              // Window title
-                        "The file '" + file.getFileName()   // Message
-                        + "' is already in the playlist.",
-                        "OK"                                // Button text
-                    );
-                }
-                else
-                {
-                    if (player.load(file)) {
-                        add_playlist_entry(file);
-                    }
-                }
-            });
-    }
-
-    else if (button == &restartButton)
-    {
-        player.start();
-    }
-
-    else if (button == &stopButton)
-    {
-        player.stop();
-    }
-    else if (button == &muteButton) {
-        player.mute();
-    }
-    else if(button == &playPauseButton)
-    {
-        player.play_pause();
-	}
-    else if(button == &toStart)
-    {
-        player.setPosition(0.0);
-        player.start();
-    }
-    else if (button == &toEnd)
-    {
-        player.setPosition(player.getLength());
-	}
-    else if (button == &forward) {
-        player.move_by(10);
-    }
-    else if (button == &backward) {
-        player.move_by(-10);
-    }
-    else if (button == &loopButton)
-    {
-        player.loop();
-    }
-    else if(button == & playlist_menu)
-    {
-        display_playlist_menu();
-    }
-    else // play list buttons
-    {
-        // Check if the clicked button is one of the playlist entries
-        for (size_t i = 0; i < playlist_buttons.size(); ++i) {
-            if (button == playlist_buttons[i]) {
-                const juce::File& file = player.getPlaylistFile(i);
-                if (file.existsAsFile()) {
-                    if (player.playFile(i)) {
-                        updateTrackInfo();
-                    }
-                    thumbnail.setSource(new juce::FileInputSource(file));
-                }
-                break;
-            }
-        }
-	}
-}
-
-void PlayerGUI::sliderValueChanged(juce::Slider* slider) {
-
-    float current_value = (float)slider->getValue();
-
-    if (slider == &volumeSlider) {
-        player.setGain(current_value / 100);
-    }
-    else if (slider == &speedSlider) {
-        player.setSpeed(current_value / 100);
-    }
-    else if (slider == &positionSlider)
-    {
-        if (slider->isMouseButtonDown())
-        {
-            player.setPosition(current_value);
-        }
-    }
-
-}
-
-void PlayerGUI::updateTrackInfo()
-{
-    if (player.isWokring()) {
-        titleLabel.setText(player.getTitle(), juce::dontSendNotification);
-        artistLabel.setText(player.getArtist(), juce::dontSendNotification);
-    }
-}
-
-void PlayerGUI::changeListenerCallback(juce::ChangeBroadcaster* source) {
-    if (source == &thumbnail) {
-        repaint();
-    }
+    repaint();
 }
 
 void PlayerGUI::timerCallback()
 {
-    double truelengthInSeconds = player.getOriginalLength();
-         
-    if (truelengthInSeconds > 0)
+    // This timer now just updates the transport bar
+    if (audio_player.isWokring())
     {
-	    double ratio = truelengthInSeconds / player.getLength();
+        controlBar->update();
+        normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
+    }
+}
 
-        positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
-        positionSlider.setValue(ratio * player.getPosition(), juce::dontSendNotification);
-    }
-    else {
-        positionSlider.setValue(0.0, juce::dontSendNotification);
-    }
-    repaint();
+double PlayerAudio::getGain() const {
+    return transportSource.getGain();
 }

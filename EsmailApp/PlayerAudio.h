@@ -35,11 +35,11 @@ public:
     void delete_button(int index);
     void remove_source();
 
-    void updateFilters(float lowGainDB = 0.0f, float midGainDB = 0.0f, float highGainDB = 0.0f);
+    void updateFilters(float lowGainDB = 1.0f, float midGainDB = 1.0f, float highGainDB = 1.0f);
     void updateReverb(float roomSize = 0.5f,
         float damping = 0.5f,
-        float wetLevel = 0.0f,
-        float dryLevel = 1.0f,
+        float wetLevel = 0.33f,
+        float dryLevel = 0.4f,
         float width = 1.0f);
 
     // setter methods
@@ -54,7 +54,6 @@ public:
     double getLength() const;
 	double getOriginalLength() const;
     int    getIndex() const;
-    double getGain() const;
     int     getOriginalIndex() const;
     bool   isWokring() const;
     int getAudioCount() const;

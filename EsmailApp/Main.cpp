@@ -21,8 +21,7 @@ public:
 
 private:
     // The main window of the app
-    class MainWindow : public juce::DocumentWindow,
-        public juce::ComponentListener
+    class MainWindow : public juce::DocumentWindow
     {
     public:
         MainWindow(juce::String name)
@@ -31,47 +30,15 @@ private:
                 DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar(true);
-            
-            mainComponentPtr = new MainComponent();
-
-            setContentOwned(mainComponentPtr, true); // MainComponent = our UI + logic
+            setContentOwned(new MainComponent(), true); // MainComponent = our UI + logic
             centreWithSize(400, 200);
             setVisible(true);
-            addComponentListener(this);
-
-        }
-
-        ~MainWindow() override
-        {
-            removeComponentListener(this);
-        }
-
-        void componentVisibilityChanged(juce::Component& component) override
-        {
-            if (&component == this)
-            {
-                bool isMinimised = !isVisible();
-
-                if (mainComponentPtr != nullptr)
-                {
-                    if (auto* gui = mainComponentPtr->getGUI())
-                    {
-                        gui->handleMinimisedStateChange(isMinimised);
-                    }
-                }
-            }
-        }
-
-        void componentMovedOrResized(juce::Component& component, bool wasMoved, bool wasResized) override
-        {
         }
 
         void closeButtonPressed() override
         {
             juce::JUCEApplication::getInstance()->systemRequestedQuit();
         }
-    private:
-        MainComponent* mainComponentPtr = nullptr;
     };
 
     std::unique_ptr<MainWindow> mainWindow;

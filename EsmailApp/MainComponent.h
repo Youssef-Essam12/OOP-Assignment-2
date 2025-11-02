@@ -6,11 +6,8 @@
 
 class MainComponent : public juce::AudioAppComponent {
 public:
-
-    enum class AudioMode { Normal, Mixer };
-
     MainComponent();
-    ~MainComponent() override;
+    ~MainComponent();
 
     // Audio
     void prepareToPlay(int samplesPerBlockExpected, double sampleRate) override;
@@ -32,22 +29,8 @@ public:
     void paint(juce::Graphics& g);
     void resized();
 
-    void setAudioMode(AudioMode newMode);
-    PlayerAudio* getPlayer(int index);
-
-    PlayerGUI* getGUI();
-
 private:
-
-    AudioMode current_audio_mode = AudioMode::Normal;
-
     PlayerAudio player;
-
-    PlayerAudio mixer_player_1;
-    PlayerAudio mixer_player_2;
-    
     PlayerGUI gui;
-
-    juce::AudioBuffer<float> tempBuffer;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent);
 };
