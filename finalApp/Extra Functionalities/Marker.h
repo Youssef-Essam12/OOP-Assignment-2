@@ -6,6 +6,9 @@ public:
 		this->setBounds(slider_x + of, slider_y, 10, 10);
 		++Marker_cnt;
 	}
+	~Marker() {
+		--Marker_cnt;
+	}
 	void paint(juce::Graphics& g) override {
         auto bounds = getLocalBounds().toFloat();
         float size = juce::jmin(bounds.getWidth(), bounds.getHeight());

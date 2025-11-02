@@ -29,6 +29,7 @@ MarkerEntry::MarkerEntry(const juce::String& t, const juce::String& a, int i, do
 
 MarkerEntry::~MarkerEntry()
 {
+    --cnt;
     deleteButton.removeListener(this);
 }
 
@@ -111,4 +112,9 @@ void MarkerEntry::mouseDown(const juce::MouseEvent& event)
 int MarkerEntry::get_marker_cnt()
 {
     return cnt;
+}
+
+void MarkerEntry::set_marker_cnt(int i)
+{
+    cnt = i;
 }

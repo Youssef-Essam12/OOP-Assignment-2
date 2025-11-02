@@ -15,6 +15,10 @@ MarkerComp::MarkerComp(PlayerAudio& player) : audio_player(player) {
     addMarkerButton.addListener(this);
     addAndMakeVisible(addMarkerButton);
 
+    clearMarkersButton.setButtonText("Clear Markers");
+    clearMarkersButton.addListener(this);
+    addAndMakeVisible(clearMarkersButton);
+
     display_markers_menu();
 }
 
@@ -38,7 +42,7 @@ void MarkerComp::display_markers_menu() {
     );
 }
 
-void MarkerComp::add_markers_list_entry(juce::String title, juce::String timeText, int i, float marker_time) {
+void MarkerComp::add_markers_list_entry(juce::String title, juce::String timeText, int i, double marker_time) {
     MarkerEntry* newEntry = new MarkerEntry(title, timeText, i, marker_time);
     newEntry->onClick = [&](int i) {
         double ratio = markerList_entries[i]->get_pos() / audio_player.getOriginalLength();
@@ -51,6 +55,7 @@ void MarkerComp::add_markers_list_entry(juce::String title, juce::String timeTex
     marker_list_component->addAndMakeVisible(newEntry);
 
     markerList_entries.emplace_back(newEntry);
+    add_marker_bottomBar(marker_time);
     resized();
 }
 
@@ -64,38 +69,82 @@ void MarkerComp::delete_marker(int index)
     repaint();
 }
 
+void MarkerComp::add_marker_pos(double p)
+{
+    marker_pos.push_back(p);
+}
+
+double MarkerComp::get_marker_pos(int i)
+{
+    return markerList_entries[i]->get_pos();
+}
+
+void MarkerComp::add_loaded_markers()
+{
+    for (int i = 0; i < (int)marker_pos.size(); i++) {
+        double currentPosition = marker_pos[i];
+        int minutes = (int)currentPosition / 60;
+        int seconds = (int)currentPosition % 60;
+        juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
+        juce::String title = "Marker " + juce::String(MarkerEntry::get_marker_cnt());
+
+        add_markers_list_entry(title, timeText, markerList_entries.size(), currentPosition);
+        marker_pos.clear();
+    }
+}
+
+void MarkerComp::clear_markers() {
+    for (auto* m : markerList_entries) {
+        removeChildComponent(m);
+        delete m;
+    }
+    markerList_entries.clear();
+    resized();
+    repaint();
+}
+
 void MarkerComp::resized() {
     const int margin = 10;
     const int buttonHeight = 40;
-    const int buttonMargin = 10;
+    const int buttonSpacing = 10; // Use a more descriptive name for the margin between components
 
     auto bounds = getLocalBounds().reduced(margin);
 
-    // Position the Add Marker button at the top
-    auto buttonArea = bounds.removeFromTop(buttonHeight);
-    addMarkerButton.setBounds(buttonArea);
+    // 1. Position the Add Marker button
+    // Take the top section for the button
+    auto addMarkerButtonArea = bounds.removeFromTop(buttonHeight);
+    addMarkerButton.setBounds(addMarkerButtonArea);
 
-    // Add spacing between button and viewport
-    bounds.removeFromTop(buttonMargin);
+    // Remove spacing below the Add Marker button
+    bounds.removeFromTop(buttonSpacing);
 
-    // Set viewport bounds for the remaining area
+    // 2. Position the Clear Markers button
+    // Take the next section for the button
+    auto clearMarkersButtonArea = bounds.removeFromTop(buttonHeight);
+    clearMarkersButton.setBounds(clearMarkersButtonArea);
+
+    // Remove spacing below the Clear Markers button
+    bounds.removeFromTop(buttonSpacing);
+
+    // 3. Set viewport bounds for the remaining area
     markerlistViewport.setBounds(bounds);
     markerlistViewport.setScrollBarsShown(true, false);
 
-    // Calculate content size for marker list
+    // 4. Calculate content size for marker list
     int contentWidth = bounds.getWidth();
-    int requiredHeight = (int)markerList_entries.size() * (buttonHeight + buttonMargin) + buttonMargin;
+    int requiredHeight = (int)markerList_entries.size() * (buttonHeight + buttonSpacing) + buttonSpacing;
     int contentHeight = std::max(bounds.getHeight(), requiredHeight);
     marker_list_component->setSize(contentWidth, contentHeight);
 
+    // 5. Position the MarkerEntry components inside the viewport's content component
     const int entryComponentWidth = contentWidth - (2 * margin);
-    int currentY = margin;
+    int currentY = buttonSpacing;
     for (int i = 0; i < markerList_entries.size(); ++i) {
         markerList_entries[i]->setBounds(margin,
             currentY,
             entryComponentWidth,
             buttonHeight);
-        currentY += buttonHeight + buttonMargin;
+        currentY += buttonHeight + buttonSpacing;
     }
 }
 

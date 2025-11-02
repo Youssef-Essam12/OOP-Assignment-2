@@ -126,3 +126,8 @@ void PlaylistViewComp::paint(juce::Graphics& g) {
 void PlaylistViewComp::buttonClicked(juce::Button* button) {
 
 }
+
+std::string PlaylistViewComp::get_playlist_path(int index)
+{
+    return playlist_paths[index];
+}

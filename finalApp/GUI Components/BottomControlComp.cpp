@@ -3,7 +3,7 @@
 #include "BottomControlComp.h"
 
 
-BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player) {
+BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player){
 	
 
     for (auto* slider : { &positionSlider }) {
@@ -63,6 +63,39 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
     positionSlider.setTextValueSuffix(" s");
 }
 
+void BottomControlComp::add_marker(double pos)
+{
+    if (audio_player.getIndex() == -1) return;
+    auto& lf = positionSlider.getLookAndFeel();
+    auto layout = lf.getSliderLayout(positionSlider);
+    auto trackBounds = layout.sliderBounds;
+
+    double markerOffset = (pos / audio_player.getOriginalLength()) * trackBounds.getWidth();
+    std::string marker_text = "Marker ";
+    marker_text += std::to_string(MarkerEntry::get_marker_cnt());
+    Marker *m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
+    markers.emplace_back(m);
+    addAndMakeVisible(m);
+    m->onClick = [this, m](double p, double length) {
+        double ratio = p / audio_player.getOriginalLength();
+        double new_pos = ratio * audio_player.getLength();
+        audio_player.setPosition(new_pos);
+    };
+    juce::Label* label = new juce::Label();
+    label->setText(marker_text, juce::dontSendNotification);
+    label->setJustificationType(juce::Justification::centred);
+    label->setFont(juce::Font(10.0f, juce::Font::bold));
+    label->setColour(juce::Label::textColourId, juce::Colours::white);
+    label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+
+    int labelWidth = 50;
+    int labelHeight = 15;
+    int markerX = positionSlider.getX() + trackBounds.getX() - 4 + markerOffset;
+    int markerY = positionSlider.getY() + 10;
+    label->setBounds(markerX - (labelWidth / 2) + 5, markerY - labelHeight - 2, labelWidth, labelHeight);
+    addAndMakeVisible(label);
+    resized();
+}
 
 
 void BottomControlComp::paint(juce::Graphics& g)

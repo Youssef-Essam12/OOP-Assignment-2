@@ -19,6 +19,7 @@ public:
 	void mouseDown(const juce::MouseEvent& event) override;
 
 	static int get_marker_cnt();
+	static void set_marker_cnt(int i);
 
 	std::function<void(int)> onClick;
 	std::function<void(int)> onDeleteClick;

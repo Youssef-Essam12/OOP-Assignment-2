@@ -45,6 +45,8 @@ private:
 
     View currentView = View::Normal;
 
+    bool markers_added = 0;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };
 

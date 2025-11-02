@@ -2,6 +2,9 @@
 #include <JuceHeader.h>
 #include "../PlayerAudio.h"
 #include "../Extra Functionalities/PlayPauseLook.h"
+#include "../Extra Functionalities/Marker.h"
+#include "MarkerComp.h"
+#include <functional>
 
 class BottomControlComp : public juce::Component,
                           public juce::Button::Listener,
@@ -26,12 +29,10 @@ public:
 
     void update(); // Called by PlayerGUI's timer
 
+    void add_marker(double pos);
+    std::function<void(double)> add_marker_in_markerView;
 
-
-    
-
-private:
-    
+private:    
     PlayerAudio& audio_player;
 
     // Sliders
@@ -51,6 +52,8 @@ private:
     // Circular play button
     PlayPauseLook pp_customlook;
     juce::TextButton playPauseButton{ "" };
+
+    std::vector<Marker*> markers;
 };
 
 
