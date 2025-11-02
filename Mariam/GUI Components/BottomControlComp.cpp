@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
 #include "BottomControlComp.h"
 
 
-BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player){
+BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player) {
 	
 
     for (auto* slider : { &positionSlider }) {
@@ -17,7 +17,38 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
             slider->getTextBoxHeight());
 
         slider->setTextValueSuffix(" %");
-    }
+    } 
+
+
+    segmentSlider.setRange(0.0, 1.0, 1.0);
+    segmentSlider.addListener(this);
+    segmentSlider.setSliderStyle(juce::Slider::TwoValueHorizontal); //the two arrows esmail wanted
+    segmentSlider.setMinAndMaxValues(0.0, audio_player.getLength());
+    segmentSlider.setVisible(false); // hidden 
+    segmentSlider.setTextBoxStyle(juce::Slider::TextBoxRight,
+        false, // read-only
+        60,    // same width
+        segmentSlider.getTextBoxHeight());
+
+    segmentSlider.textFromValueFunction = [&](double value) {
+        int minutes = static_cast<int>(value) / 60;
+        int seconds = static_cast<int>(value) - (minutes * 60);
+
+        std::string seconds_string = std::to_string(seconds);
+        if (seconds < 10) seconds_string = "0" + seconds_string;
+
+        std::string minutes_string = std::to_string(minutes);
+        if (minutes < 10) minutes_string = "0" + minutes_string;
+
+        return minutes_string + ":" + seconds_string;
+        };
+
+    segmentSlider.setNumDecimalPlacesToDisplay(2);
+    segmentSlider.setTextValueSuffix(" s");
+
+    addAndMakeVisible(segmentSlider);
+
+   
 
 	addAndMakeVisible(forwardButton);
 	addAndMakeVisible(backwardButton);
@@ -63,39 +94,6 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
     positionSlider.setTextValueSuffix(" s");
 }
 
-void BottomControlComp::add_marker(double pos)
-{
-    if (audio_player.getIndex() == -1) return;
-    auto& lf = positionSlider.getLookAndFeel();
-    auto layout = lf.getSliderLayout(positionSlider);
-    auto trackBounds = layout.sliderBounds;
-
-    double markerOffset = (pos / audio_player.getOriginalLength()) * trackBounds.getWidth();
-    std::string marker_text = "Marker ";
-    marker_text += std::to_string(MarkerEntry::get_marker_cnt());
-    Marker *m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
-    markers.emplace_back(m);
-    addAndMakeVisible(m);
-    m->onClick = [this, m](double p, double length) {
-        double ratio = p / audio_player.getOriginalLength();
-        double new_pos = ratio * audio_player.getLength();
-        audio_player.setPosition(new_pos);
-    };
-    juce::Label* label = new juce::Label();
-    label->setText(marker_text, juce::dontSendNotification);
-    label->setJustificationType(juce::Justification::centred);
-    label->setFont(juce::Font(10.0f, juce::Font::bold));
-    label->setColour(juce::Label::textColourId, juce::Colours::white);
-    label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
-
-    int labelWidth = 50;
-    int labelHeight = 15;
-    int markerX = positionSlider.getX() + trackBounds.getX() - 4 + markerOffset;
-    int markerY = positionSlider.getY() + 10;
-    label->setBounds(markerX - (labelWidth / 2) + 5, markerY - labelHeight - 2, labelWidth, labelHeight);
-    addAndMakeVisible(label);
-    resized();
-}
 
 
 void BottomControlComp::paint(juce::Graphics& g)
@@ -106,6 +104,11 @@ void BottomControlComp::paint(juce::Graphics& g)
 void BottomControlComp::resized()
 {
     auto bounds = getLocalBounds().reduced(10); 
+
+    if (segmentBarVisible)
+    {
+        segmentSlider.setBounds(bounds.removeFromTop(25)); 
+    } 
 
     positionSlider.setBounds(bounds.removeFromTop(30));
     bounds.removeFromTop(10); 
@@ -197,8 +200,27 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     }
     else if (button == &abSegmentToggle)
     {
-        // TODO: Implement A-B segment
+        bool toggleState = abSegmentToggle.getToggleState();
+        segmentBarVisible = toggleState;
+        segmentSlider.setVisible(toggleState);
+
+        if (toggleState)
+        {
+            double len = audio_player.getLength();
+            segmentSlider.setRange(0.0, len, 1.0);
+            segmentSlider.setMinAndMaxValues(0.0, len, juce::dontSendNotification); 
+        }
+        else
+        {
+            audio_player.clearSegmentLoop();
+            segmentA = segmentB = -1;
+            segmentASet = false;
+        }
+
+        resized();
+        repaint();
     }
+
 
 }
 
@@ -218,6 +240,20 @@ void BottomControlComp::sliderValueChanged(juce::Slider* slider)
 
         }
     }
+    else if (slider == &segmentSlider)
+    {
+        double start = segmentSlider.getMinValue();
+        double end = segmentSlider.getMaxValue();
+
+        if (end > start)
+        {
+            segmentA = start;
+            segmentB = end;
+            audio_player.enableSegmentLoop(segmentA, segmentB);
+        }
+    }
+
+
 }
 
 void BottomControlComp::update() {
@@ -241,5 +277,10 @@ void BottomControlComp::update() {
             positionSlider.setValue(0.0, juce::dontSendNotification);
         }
     }
+    if (segmentBarVisible)
+    {
+        segmentSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
+    }
+
     repaint();
 }

@@ -26,6 +26,7 @@ public:
     void play_pause();
     void mute();
     void loop();
+
     void enableSegmentLoop(double start, double end);
     void clearSegmentLoop();
 
@@ -34,18 +35,28 @@ public:
     void delete_button(int index);
     void remove_source();
 
+    void updateFilters(float lowGainDB = 1.0f, float midGainDB = 1.0f, float highGainDB = 1.0f);
+    void updateReverb(float roomSize = 0.5f,
+        float damping = 0.5f,
+        float wetLevel = 0.33f,
+        float dryLevel = 0.4f,
+        float width = 1.0f);
+
     // setter methods
     void setSpeed(float speed);
     void setPosition(double pos);
     void setGain(float gain);
     void setIndex(int index);
+    void setOriginalIndex(int index);
 
     // getter methods
     double getPosition() const;
     double getLength() const;
 	double getOriginalLength() const;
     int    getIndex() const;
+    int     getOriginalIndex() const;
     bool   isWokring() const;
+    int getAudioCount() const;
     
     juce::String getTitle() const;
     juce::String getArtist() const;
@@ -59,6 +70,7 @@ private:
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
 
+    int original_loaded_audioFile_index = -1;
     int currently_loaded_audioFile_index = -1;
     bool is_muted = 0;
     float current_gain = 0;
@@ -68,8 +80,8 @@ private:
 
     bool is_looping = 0;
     
-    double loopStart = -1;
-    double loopEnd = -1;
+    double loopStart = 0.0;
+    double loopEnd = 0.0;
     bool segmentLoopActive = false;
 
     std::vector<double> original_audio_length_in_seconds;
@@ -78,6 +90,13 @@ private:
     std::vector<MetaDataWraper> audioFileMetadata;
     std::vector<std::unique_ptr<juce::AudioFormatReader>> audioReaders;
 
+    // Equalizer
+    using Filter = juce::dsp::IIR::Filter<float>;
+    using FilterChain = juce::dsp::ProcessorChain<Filter, Filter, Filter>;
+    FilterChain leftChain, rightChain;
+
+    // Reverb
+    juce::dsp::Reverb reverb;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };

@@ -9,6 +9,8 @@ class LeftNavComp;
 class TopBarComp;
 class NormalViewComp;
 class PlaylistViewComp;
+class EditorComp;
+class MarkerComp;
 
 
 class PlayerGUI : public juce::Component,
@@ -38,8 +40,12 @@ private:
     // View components
     std::unique_ptr<NormalViewComp> normalView;
     std::unique_ptr<PlaylistViewComp> playlistView;
+    std::unique_ptr<EditorComp> editorView;
+    std::unique_ptr<MarkerComp> markerView;
 
     View currentView = View::Normal;
+
+    bool markers_added = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };

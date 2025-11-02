@@ -8,7 +8,6 @@ LeftNavComp::LeftNavComp() {
     viewButtons.emplace_back(new juce::TextButton("Normal"));
     viewButtons.emplace_back(new juce::TextButton("Playlist"));
     viewButtons.emplace_back(new juce::TextButton("Editor"));
-    viewButtons.emplace_back(new juce::TextButton("Markers"));
    
     for (auto* btn : viewButtons) {
         addAndMakeVisible(btn);

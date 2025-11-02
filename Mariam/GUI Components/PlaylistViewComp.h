@@ -25,7 +25,6 @@ public:
     // talk to normal, player
     std::function<void(int index)> onAudioSelected;
 
-    std::string get_playlist_path(int index);
 private:
     PlayerAudio& audio_player;
     std::vector<juce::TextButton*> playlist_buttons;
