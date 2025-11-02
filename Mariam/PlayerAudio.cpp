@@ -10,15 +10,97 @@ PlayerAudio::~PlayerAudio() {
 }
 
 void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate) {
-	transportSource.prepareToPlay(samplesPerBlockExpected, sampleRate);
+    this->sample_rate = sampleRate;
+
+    juce::dsp::ProcessSpec spec;
+    spec.maximumBlockSize = samplesPerBlockExpected;
+    spec.sampleRate = sampleRate;
+    spec.numChannels = 2;
+
+    leftChain.prepare(spec);
+    rightChain.prepare(spec);
+    updateFilters();
+
+    reverb.prepare(spec);
+    updateReverb();
+
+    transportSource.prepareToPlay(samplesPerBlockExpected, sampleRate);
+}
+
+void PlayerAudio::updateReverb(float roomSize,float damping,float wetLevel, float dryLevel, float width) {
+    juce::dsp::Reverb::Parameters params;
+
+    params.roomSize = roomSize;    // 0.0 to 1.0 (size of the space)
+    params.damping = damping;      // 0.0 to 1.0 (high frequency absorption)
+    params.wetLevel = wetLevel;    // 0.0 to 1.0 (reverb volume)
+    params.dryLevel = dryLevel;    // 0.0 to 1.0 (original signal volume)
+    params.width = width;          // 0.0 to 1.0 (stereo width)
+    params.freezeMode = 0.0f;      // 0.0 = normal, 1.0 = infinite reverb
+
+    reverb.setParameters(params);
+}
+
+void PlayerAudio::updateFilters(float lowGainDB, float midGainDB, float highGainDB)
+{
+    float sampleRate = this->sample_rate;
+
+    float lowGain = juce::Decibels::decibelsToGain(lowGainDB);
+    float midGain = juce::Decibels::decibelsToGain(midGainDB);
+    float highGain = juce::Decibels::decibelsToGain(highGainDB);
+
+    auto lowShelfCoeffs = juce::dsp::IIR::Coefficients<float>::makeLowShelf(
+        sampleRate,
+        100.0f,      // cutoff frequency
+        0.707f,      // Q factor (resonance)
+        lowGain    // gain in decibels
+    );
+
+    auto peakCoeffs = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
+        sampleRate,
+        1000.0f,     // center frequency
+        1.0f,        // Q factor (bandwidth)
+        midGain
+    );
+
+    auto highShelfCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighShelf(
+        sampleRate,
+        8000.0f,
+        0.707f,
+        highGain
+    );
+
+    *leftChain.get<0>().coefficients = *lowShelfCoeffs;
+    *leftChain.get<1>().coefficients = *peakCoeffs;
+    *leftChain.get<2>().coefficients = *highShelfCoeffs;
+
+    *rightChain.get<0>().coefficients = *lowShelfCoeffs;
+    *rightChain.get<1>().coefficients = *peakCoeffs;
+    *rightChain.get<2>().coefficients = *highShelfCoeffs;
 }
 
 void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) {
     transportSource.getNextAudioBlock(bufferToFill);
+
+    juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, bufferToFill.startSample);
+    auto subBlock = block.getSubBlock(0, bufferToFill.numSamples);
+
+    auto leftBlock = subBlock.getSingleChannelBlock(0);
+    auto rightBlock = subBlock.getSingleChannelBlock(1);
+
+    juce::dsp::ProcessContextReplacing<float> leftContext(leftBlock);
+    juce::dsp::ProcessContextReplacing<float> rightContext(rightBlock);
+
+    leftChain.process(leftContext);
+    rightChain.process(rightContext);
+
+    juce::dsp::ProcessContextReplacing<float> reverbContext(subBlock);
+    reverb.process(reverbContext);
+
     if (is_looping && transportSource.getCurrentPosition() >= transportSource.getLengthInSeconds()) {
         transportSource.setPosition(0.0);
         transportSource.start();
     }
+
     // SEGMENT LOOPING 
     if (segmentLoopActive && loopStart != -1 && loopEnd > loopStart)
     {
@@ -28,15 +110,24 @@ void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferTo
             transportSource.setPosition(loopStart);
         }
     }
-
 }
 
 void PlayerAudio::setIndex(int index) {
     this->currently_loaded_audioFile_index = index;
 }
 
+void PlayerAudio::setOriginalIndex(int index)
+{
+    this->original_loaded_audioFile_index = index;
+}
+
 int PlayerAudio::getIndex() const {
     return currently_loaded_audioFile_index;
+}
+
+int PlayerAudio::getOriginalIndex() const
+{
+    return this->original_loaded_audioFile_index;
 }
 
 void PlayerAudio::releaseResources() {
@@ -83,8 +174,6 @@ bool PlayerAudio::load(const juce::File& file) {
 
             audioReaders.push_back(std::unique_ptr<juce::AudioFormatReader>(reader));
 
-
-;            //this->original_audio_length_in_seconds.emplace_back(this->getLength());
             this->original_audio_length_in_seconds.emplace_back(reader->lengthInSamples / reader->sampleRate);
             return true;
         }
@@ -225,6 +314,11 @@ const juce::File& PlayerAudio::getPlaylistFile(int index) const {
 
 bool PlayerAudio::isWokring() const {
     return currently_loaded_audioFile_index != -1;
+}
+
+int PlayerAudio::getAudioCount() const
+{
+    return this->audioFiles.size();
 }
 
 bool PlayerAudio::isFileAlreadyLoaded(const juce::File& file) {
