@@ -9,6 +9,10 @@ PlayerAudio::~PlayerAudio() {
     releaseResources();
 }
 
+int PlayerAudio::getPlaylistSize() const {
+    return (int)this->audioFiles.size();
+}
+
 void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate) {
     this->sample_rate = sampleRate;
 

@@ -26,9 +26,17 @@ public:
 
     void update(); // Called by PlayerGUI's timer
 
+    void generateShuffleOrder();
+    int get_next_song_index(int song_index);
+    //std::function<void()> setShuffle(bool On);
 
 private:
     
+    bool shuffleOn = false;
+
+    std::vector<int> shuffleOrder;
+    std::vector<int> inverse_shuffleOrder;
+
     PlayerAudio& audio_player;
 
     // Sliders

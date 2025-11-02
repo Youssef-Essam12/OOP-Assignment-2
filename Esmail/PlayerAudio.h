@@ -54,6 +54,7 @@ public:
     double getLength() const;
 	double getOriginalLength() const;
     int    getIndex() const;
+    int    getPlaylistSize() const;
     double getGain() const;
     int     getOriginalIndex() const;
     bool   isWokring() const;

@@ -1,6 +1,9 @@
 #pragma once
+#include <algorithm>
 #include <JuceHeader.h>
 #include "BottomControlComp.h"
+#include <random>
+#include <numeric>
 
 
 BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player) {
@@ -160,7 +163,7 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     }
     else if (button == &shuffleToggle)
     {
-        // TODO: Implement shuffle
+        shuffleOn ^= 1;
     }
     else if (button == &abSegmentToggle)
     {
@@ -168,6 +171,43 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     }
 
 }
+
+void BottomControlComp::generateShuffleOrder() {
+    
+    shuffleOrder.clear();
+    shuffleOrder.shrink_to_fit();
+
+    inverse_shuffleOrder.clear();
+    inverse_shuffleOrder.shrink_to_fit();
+
+    int playlist_size = audio_player.getPlaylistSize();
+
+    shuffleOrder.resize(playlist_size);
+    inverse_shuffleOrder.resize(playlist_size);
+
+    std::iota(shuffleOrder.begin(), shuffleOrder.end(), 0);
+    
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    std::shuffle(shuffleOrder.begin(), shuffleOrder.end(), g);
+
+    for (int i = 0; i < playlist_size; i++) {
+        inverse_shuffleOrder[shuffleOrder[i]] = i;
+    }
+}
+
+int BottomControlComp::get_next_song_index(int song_index) {
+    
+    int playlist_size = audio_player.getPlaylistSize();
+    
+    if (playlist_size == 0) return -1;
+
+    int next_song_index = inverse_shuffleOrder[song_index];
+
+    return shuffleOrder[(next_song_index + 1) % playlist_size];
+}
+
 
 void BottomControlComp::sliderValueChanged(juce::Slider* slider)
 {
@@ -199,10 +239,17 @@ void BottomControlComp::update() {
     {
         if (truelengthInSeconds > 0)
         {
-            double ratio = truelengthInSeconds / audio_player.getLength();
-
+            double ratio = audio_player.getPosition() / audio_player.getLength();
+            double result = ratio * truelengthInSeconds;
             positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
-            positionSlider.setValue(ratio * audio_player.getPosition(), juce::dontSendNotification);
+            positionSlider.setValue(result, juce::dontSendNotification);
+
+            if (shuffleOn && ratio >= .999) {
+                
+                if (shuffleOrder.size() != audio_player.getPlaylistSize()) generateShuffleOrder();
+
+                audio_player.playFile(get_next_song_index(audio_player.getIndex()));
+            }
         }
         else {
             positionSlider.setValue(0.0, juce::dontSendNotification);

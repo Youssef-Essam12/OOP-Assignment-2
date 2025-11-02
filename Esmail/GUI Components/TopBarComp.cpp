@@ -41,7 +41,7 @@ void TopBarComp::buttonClicked(juce::Button* button) {
                         "OK"                                // Button text
                     );
                 }
-                else
+                else if(file.existsAsFile())
                 {
                     audio_player.load(file);
                     onFileLoaded(file);
