@@ -95,6 +95,7 @@ juce::String MarkerComp::get_marker_title(int i)
 
 void MarkerComp::add_loaded_markers()
 {
+    if (audio_player.getPlaylistFile(audio_player.getIndex()).getFullPathName() != PlayerAudio::last_played_audio_path) return;
     for (int i = 0; i < (int)marker_pos.size(); i++) {
         ++marker_cnt;
         double currentPosition = marker_pos[i];

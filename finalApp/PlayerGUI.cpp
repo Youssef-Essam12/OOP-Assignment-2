@@ -17,6 +17,8 @@
 
 // === PlayerGUI Constructor and Destructor ===
 
+juce::String PlayerAudio::last_played_audio_path = "";
+
 PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, PlayerAudio& mixer_player_2)
     : audio_player(audio_player),
     mixer_player_1(mixer_player_1),
@@ -122,6 +124,7 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
         if (paths_from_json_file == nullptr) return;
 
         std::string last_played_path = session["last_audio_path"].toString().toStdString();
+        PlayerAudio::set_last_played_audio_path((juce::String)last_played_path);
 
         for (auto& path : *paths_from_json_file) {
             juce::File f = juce::File(path.toString());

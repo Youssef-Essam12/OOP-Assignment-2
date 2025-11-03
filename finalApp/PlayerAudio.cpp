@@ -367,6 +367,11 @@ bool PlayerAudio::isFileAlreadyLoaded(const juce::File& file) {
     return false;
 }
 
+void PlayerAudio::set_last_played_audio_path(juce::String path)
+{
+    last_played_audio_path = path;
+}
+
 double PlayerAudio::getGain() const {
     // New function merged from finalApp
     return transportSource.getGain();
