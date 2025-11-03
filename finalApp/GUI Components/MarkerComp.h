@@ -28,6 +28,9 @@ public:
 
     void clear_markers();
 
+    int get_marker_cnt();
+    void set_market_cnt(int cnt);
+
     std::function<void(double)> add_marker_bottomBar;
     std::function<void()> clear_markers_buttomBar;
 private:
@@ -42,6 +45,7 @@ private:
 
     // only used when loading the session
     std::vector<double> marker_pos;
+    int marker_cnt = 1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MarkerComp);
 

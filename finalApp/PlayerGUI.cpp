@@ -15,10 +15,6 @@
 #include "Extra Functionalities/FloatingVolumeSlider.h"
 #include "Extra Functionalities/Marker.h"
 
-// The definition of a static member. Assuming Marker is the correct class name.
-int Marker::Marker_cnt = 1;
-
-
 // === PlayerGUI Constructor and Destructor ===
 
 PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, PlayerAudio& mixer_player_2)
@@ -91,8 +87,8 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
         juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
 
         // Assuming Marker is the correct class name
-        juce::String title = "Marker " + juce::String(Marker::get_Marker_cnt());
-        markerView->add_markers_list_entry(title, timeText, Marker::get_Marker_cnt(), currentPosition);
+        juce::String title = "Marker " + juce::String(markerView->get_marker_cnt());
+        markerView->add_markers_list_entry(title, timeText, markerView->get_marker_cnt(), currentPosition);
         };
 
     controlBar->add_loaded_markers = [&]() {
@@ -123,7 +119,6 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
         juce::Array<juce::var>* paths_from_json_file = session["playlist"].getArray();
         if (paths_from_json_file == nullptr || paths_from_json_file->size() == 0) goto skip_loading; // Added size check
 
-        // Error C2362 fix: these variables are now scoped and initialized within this block
         std::string last_played_path = session["last_audio_path"].toString().toStdString();
 
         for (auto& path : *paths_from_json_file) {
@@ -186,8 +181,6 @@ PlayerGUI::~PlayerGUI()
 
     if (current_audio_playing != -1) // Use != -1 instead of ~ (bitwise NOT)
     {
-        // FIX: Reverting to the logic that calls get_playlist_path, 
-        // assuming it exists in PlaylistViewComp.
         session->setProperty("last_audio_path", juce::String(playlistView->get_playlist_path(current_audio_playing)));
     }
     session->setProperty("last_played_index", current_audio_playing);
@@ -202,16 +195,16 @@ PlayerGUI::~PlayerGUI()
     session->setProperty("playlist", arr);
 
     arr.clear();
-    // Assuming Marker is the correct class name
-    for (int i = 0; i < Marker::get_Marker_cnt() - 1; i++) {
-        arr.add(markerView->get_marker_pos(i));
-    }
-    session->setProperty("markers", arr);
 
-    juce::var session_json(session);
-    juce::String jsonOutput = juce::JSON::toString(session_json, false);
-    juce::File sessionFile("data.json");
-    sessionFile.replaceWithText(jsonOutput);
+    //for (int i = 0; i < markerView->get_marker_cnt(); i++) {
+    //    arr.add(markerView->get_marker_pos(i));
+    //}
+    //session->setProperty("markers", arr);
+
+    //juce::var session_json(session);
+    //juce::String jsonOutput = juce::JSON::toString(session_json, false);
+    //juce::File sessionFile("data.json");
+    //sessionFile.replaceWithText(jsonOutput);
 }
 
 // === Member Functions ===
@@ -293,7 +286,6 @@ void PlayerGUI::resized()
 
 void PlayerGUI::setView(View newView)
 {
-    // --- Step 1: Hide the OLD view ---
     switch (currentView)
     {
     case View::Normal:

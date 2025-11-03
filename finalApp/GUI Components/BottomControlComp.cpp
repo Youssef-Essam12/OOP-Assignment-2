@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <random>
 #include <numeric> // Added headers for shuffle functionality
+#include "BinaryData.h"
 
 BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player) {
 
@@ -101,36 +102,46 @@ void BottomControlComp::add_marker(double pos)
     auto trackBounds = layout.sliderBounds;
 
     double markerOffset = (pos / audio_player.getOriginalLength()) * trackBounds.getWidth();
-
-    std::string marker_text = "Marker ";
-    // FIX: Corrected typo from MarkerEntry::get_marker_cnt() to Marker::get_Marker_cnt()
-    marker_text += std::to_string(Marker::get_Marker_cnt() - 1);
-
-    Marker* m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
-    markers.emplace_back(m);
-    addAndMakeVisible(m);
     bool visible = markerToggle.getToggleState();
-    m->setVisible(visible);
-    m->onClick = [this](double p) {
-        double ratio = p / audio_player.getOriginalLength();
-        double new_pos = ratio * audio_player.getLength();
-        audio_player.setPosition(new_pos);
-        };
-    juce::Label* label = new juce::Label();
-    label->setText(marker_text, juce::dontSendNotification);
-    label->setJustificationType(juce::Justification::centred);
-    label->setFont(juce::Font(10.0f, juce::Font::bold));
+
+    //std::string marker_text = "Marker ";
+    //marker_text += std::to_string(Marker::get_Marker_cnt() - 1);
+
+    //Marker* m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
+    //markers.emplace_back(m);
+    //addAndMakeVisible(m);
+    //m->setVisible(visible);
+    //m->onClick = [this](double p) {
+    //    double ratio = p / audio_player.getOriginalLength();
+    //    double new_pos = ratio * audio_player.getLength();
+    //    audio_player.setPosition(new_pos);
+    //};
+    const auto* data = BinaryData::marker_png;
+    const int dataSize = BinaryData::marker_pngSize;
+    auto marker_icon = juce::ImageFileFormat::loadFrom(data, dataSize);
+
+    juce::ImageButton* marker_button = new juce::ImageButton;
+    marker_button->setImages(false, true, true,
+        marker_icon, 1.0f, juce::Colours::transparentWhite,
+        marker_icon, 1.0f, juce::Colours::transparentWhite,
+        marker_icon, 1.0f, juce::Colours::transparentWhite);
+    //label->setText(marker_text, juce::dontSendNotification);
+    //marker_button->setJustificationType(juce::Justification::centred);
+    /*label->setFont(juce::Font(10.0f, juce::Font::bold));
     label->setColour(juce::Label::textColourId, juce::Colours::white);
-    label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+    label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);*/
 
     int labelWidth = 50;
     int labelHeight = 15;
     int markerX = positionSlider.getX() + trackBounds.getX() - 4 + markerOffset;
     int markerY = positionSlider.getY() + 10;
-    label->setBounds(markerX - (labelWidth / 2) + 5, markerY - labelHeight - 2, labelWidth, labelHeight);
-    addAndMakeVisible(label);
-    label->setVisible(visible);
-    markersLabels.emplace_back(label);
+    marker_button->setBounds(markerX - (labelWidth / 2) + 5, markerY - labelHeight - 2, labelWidth, labelHeight);
+    addAndMakeVisible(marker_button);
+    marker_button->addListener(this);
+    marker_button->setVisible(visible);
+    //markersLabels.emplace_back(marker_button);
+    markersImageButtons.emplace_back(marker_button);
+    marker_pos.push_back(pos);
     resized();
 }
 
@@ -141,11 +152,11 @@ void BottomControlComp::clear_markers() {
     }
     markers.clear();
 
-    for (auto* l : markersLabels) {
-        removeChildComponent(l);
-        delete l;
+    for (auto* btn : markersImageButtons) {
+        removeChildComponent(btn);
+        delete btn;
     }
-    markersLabels.clear();
+    markersImageButtons.clear();
 }
 
 
@@ -291,9 +302,20 @@ void BottomControlComp::buttonClicked(juce::Button* button)
             added_markers = 1;
         }
         bool visible = markerToggle.getToggleState();
-        for (int i = 0; i < (int)markers.size(); i++) {
-            markers[i]->setVisible(visible);
-            markersLabels[i]->setVisible(visible);
+        for (int i = 0; i < (int)markersImageButtons.size(); i++) {
+            //markers[i]->setVisible(visible);
+            //markersLabels[i]->setVisible(visible);
+            markersImageButtons[i]->setVisible(visible);
+        }
+    }
+    else { // markerImageButtons
+        for (int i = 0; i < (int)markersImageButtons.size(); i++) {
+            if (button == markersImageButtons[i]) {
+                double ratio = marker_pos[i] / audio_player.getOriginalLength();
+                double new_pos = ratio * audio_player.getLength();
+                audio_player.setPosition(new_pos);
+                break;
+            }
         }
     }
 }

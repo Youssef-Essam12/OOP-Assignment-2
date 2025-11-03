@@ -74,8 +74,9 @@ private:
     juce::TextButton playPauseButton{ "" };
 
     std::vector<Marker*> markers;
-    std::vector<juce::Label*> markersLabels;
-
+    //std::vector<juce::Label*> markersLabels;
+    std::vector<juce::ImageButton*> markersImageButtons;
+    std::vector<double> marker_pos;
     bool added_markers = 0;
     bool markers_visible = 0;
 };

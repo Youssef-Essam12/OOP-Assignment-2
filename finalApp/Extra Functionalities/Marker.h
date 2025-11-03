@@ -15,15 +15,11 @@ public:
 	// Public API methods
 	double get_pos();
 	double get_length();
-	static int get_Marker_cnt();
-	static void set_Marker_cnt(int c);
 
 	// Click handler (Function object)
 	std::function<void(double)> onClick;
 
 private:
-	// Static counter for all Marker instances
-	static int Marker_cnt;
 
 	// Marker data
 	double offset, pos, length;
