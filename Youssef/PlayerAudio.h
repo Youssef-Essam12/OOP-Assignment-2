@@ -47,13 +47,16 @@ public:
     void setPosition(double pos);
     void setGain(float gain);
     void setIndex(int index);
+    void setOriginalIndex(int index);
 
     // getter methods
     double getPosition() const;
     double getLength() const;
 	double getOriginalLength() const;
     int    getIndex() const;
+    int     getOriginalIndex() const;
     bool   isWokring() const;
+    int getAudioCount() const;
     
     juce::String getTitle() const;
     juce::String getArtist() const;
@@ -67,6 +70,7 @@ private:
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
 
+    int original_loaded_audioFile_index = -1;
     int currently_loaded_audioFile_index = -1;
     bool is_muted = 0;
     float current_gain = 0;

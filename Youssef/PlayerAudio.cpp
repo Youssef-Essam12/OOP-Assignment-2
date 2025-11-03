@@ -116,8 +116,18 @@ void PlayerAudio::setIndex(int index) {
     this->currently_loaded_audioFile_index = index;
 }
 
+void PlayerAudio::setOriginalIndex(int index)
+{
+    this->original_loaded_audioFile_index = index;
+}
+
 int PlayerAudio::getIndex() const {
     return currently_loaded_audioFile_index;
+}
+
+int PlayerAudio::getOriginalIndex() const
+{
+    return this->original_loaded_audioFile_index;
 }
 
 void PlayerAudio::releaseResources() {
@@ -304,6 +314,11 @@ const juce::File& PlayerAudio::getPlaylistFile(int index) const {
 
 bool PlayerAudio::isWokring() const {
     return currently_loaded_audioFile_index != -1;
+}
+
+int PlayerAudio::getAudioCount() const
+{
+    return this->audioFiles.size();
 }
 
 bool PlayerAudio::isFileAlreadyLoaded(const juce::File& file) {

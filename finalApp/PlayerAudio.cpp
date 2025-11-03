@@ -9,6 +9,10 @@ PlayerAudio::~PlayerAudio() {
     releaseResources();
 }
 
+int PlayerAudio::getPlaylistSize() const {
+    return (int)this->audioFiles.size();
+}
+
 void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate) {
     this->sample_rate = sampleRate;
 
@@ -27,7 +31,7 @@ void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate) 
     transportSource.prepareToPlay(samplesPerBlockExpected, sampleRate);
 }
 
-void PlayerAudio::updateReverb(float roomSize,float damping,float wetLevel, float dryLevel, float width) {
+void PlayerAudio::updateReverb(float roomSize, float damping, float wetLevel, float dryLevel, float width) {
     juce::dsp::Reverb::Parameters params;
 
     params.roomSize = roomSize;    // 0.0 to 1.0 (size of the space)
@@ -84,14 +88,18 @@ void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferTo
     juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, bufferToFill.startSample);
     auto subBlock = block.getSubBlock(0, bufferToFill.numSamples);
 
-    auto leftBlock = subBlock.getSingleChannelBlock(0);
-    auto rightBlock = subBlock.getSingleChannelBlock(1);
+    // FIX: Add channel check before attempting to process stereo blocks (from finalApp)
+    if (bufferToFill.buffer->getNumChannels() >= 2)
+    {
+        auto leftBlock = subBlock.getSingleChannelBlock(0);
+        auto rightBlock = subBlock.getSingleChannelBlock(1);
 
-    juce::dsp::ProcessContextReplacing<float> leftContext(leftBlock);
-    juce::dsp::ProcessContextReplacing<float> rightContext(rightBlock);
+        juce::dsp::ProcessContextReplacing<float> leftContext(leftBlock);
+        juce::dsp::ProcessContextReplacing<float> rightContext(rightBlock);
 
-    leftChain.process(leftContext);
-    rightChain.process(rightContext);
+        leftChain.process(leftContext);
+        rightChain.process(rightContext);
+    }
 
     juce::dsp::ProcessContextReplacing<float> reverbContext(subBlock);
     reverb.process(reverbContext);
@@ -101,7 +109,7 @@ void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferTo
         transportSource.start();
     }
 
-    // SEGMENT LOOPING 
+    // SEGMENT LOOPING    
     if (segmentLoopActive && loopStart != -1 && loopEnd > loopStart)
     {
         double pos = transportSource.getCurrentPosition();
@@ -131,16 +139,16 @@ int PlayerAudio::getOriginalIndex() const
 }
 
 void PlayerAudio::releaseResources() {
-	transportSource.releaseResources();
+    transportSource.releaseResources();
 }
 
 void PlayerAudio::start() {
-	transportSource.start();
+    transportSource.start();
 }
 
 void PlayerAudio::stop() {
-	transportSource.stop();
-	transportSource.setPosition(0.0);
+    transportSource.stop();
+    transportSource.setPosition(0.0);
 }
 
 void PlayerAudio::play_pause() {
@@ -154,6 +162,7 @@ void PlayerAudio::play_pause() {
 
 
 void PlayerAudio::setGain(float gain) {
+    // Only save the current_gain if we are NOT muted, otherwise the saved value will be 0.
     if (!this->is_muted) this->current_gain = gain;
     transportSource.setGain(gain);
 }
@@ -174,7 +183,8 @@ bool PlayerAudio::load(const juce::File& file) {
 
             audioReaders.push_back(std::unique_ptr<juce::AudioFormatReader>(reader));
 
-            this->original_audio_length_in_seconds.emplace_back(reader->lengthInSamples / reader->sampleRate);
+            // FIX: Ensure correct double casting of lengthInSamples (from finalApp)
+            this->original_audio_length_in_seconds.emplace_back((double)reader->lengthInSamples / reader->sampleRate);
             return true;
         }
     }
@@ -189,7 +199,7 @@ bool PlayerAudio::playFile(int index) {
 
         transportSource.stop();
         transportSource.setSource(nullptr);
-        readerSource.reset(); 
+        readerSource.reset();
 
         readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, false);
 
@@ -199,7 +209,7 @@ bool PlayerAudio::playFile(int index) {
         transportSource.setSource(readerSource.get(),
             0,
             nullptr,
-            reader->sampleRate); 
+            reader->sampleRate);
 
         currently_loaded_audioFile_index = index;
         transportSource.start();
@@ -226,33 +236,49 @@ void PlayerAudio::remove_source()
 }
 
 double PlayerAudio::getPosition() const {
-	return transportSource.getCurrentPosition();
+    return transportSource.getCurrentPosition();
 }
 double PlayerAudio::getLength() const {
-	return transportSource.getLengthInSeconds();
+    return transportSource.getLengthInSeconds();
 }
 
 juce::String PlayerAudio::getTitle() const {
-    return audioFileMetadata[currently_loaded_audioFile_index].title;
+    // FIX: Add index validity check (from finalApp)
+    if (currently_loaded_audioFile_index >= 0 && currently_loaded_audioFile_index < audioFileMetadata.size())
+        return audioFileMetadata[currently_loaded_audioFile_index].title;
+    return {}; // Return empty String for safety
 }
 juce::String PlayerAudio::getArtist() const {
-    return audioFileMetadata[currently_loaded_audioFile_index].artist;
+    // FIX: Add index validity check (from finalApp)
+    if (currently_loaded_audioFile_index >= 0 && currently_loaded_audioFile_index < audioFileMetadata.size())
+        return audioFileMetadata[currently_loaded_audioFile_index].artist;
+    return {}; // Return empty String for safety
 }
 
 double PlayerAudio::getOriginalLength() const {
-    if(this->isWokring() && ~currently_loaded_audioFile_index)
+    // FIX: Corrected index check and bounds checking (from finalApp)
+    if (isWokring() && currently_loaded_audioFile_index >= 0 && currently_loaded_audioFile_index < original_audio_length_in_seconds.size())
         return this->original_audio_length_in_seconds[currently_loaded_audioFile_index];
     return 1.0;
 }
 
 void PlayerAudio::mute() {
     is_muted = !is_muted;
-    if (this->is_muted) this->setGain(0);
-    else this->setGain(current_gain);
+    if (this->is_muted)
+    {
+        // Save the current gain before muting (from finalApp)
+        this->current_gain = transportSource.getGain();
+        this->setGain(0.0f);
+    }
+    else
+    {
+        // Restore the saved gain (from finalApp)
+        this->setGain(current_gain);
+    }
 }
 
 void PlayerAudio::setPosition(double pos) {
-    
+
     pos = std::min(pos, this->getLength());
     pos = std::max(0.0, pos);
 
@@ -260,14 +286,14 @@ void PlayerAudio::setPosition(double pos) {
 }
 
 void PlayerAudio::move_by(double displacement) {
-    
-    double org_position = this->getPosition() / this->getLength() * this->getOriginalLength();
 
-    org_position += displacement;
-    org_position = std::min(org_position, this->getLength());
-    org_position = std::max(0.0, org_position);
-	
-    double new_position = org_position / this->getOriginalLength() * this->getLength();
+    // FIX: Using simplified logic (from finalApp) to move the position directly 
+    // based on the current transport source state.
+    double current_position = this->getPosition();
+    double new_position = current_position + displacement;
+
+    new_position = std::min(new_position, this->getLength());
+    new_position = std::max(0.0, new_position);
 
     this->transportSource.setPosition(new_position);
 }
@@ -277,7 +303,7 @@ void PlayerAudio::setSpeed(float speed) {
     float new_sample_rate = this->sample_rate * speed;
 
     double position_ratio = this->transportSource.getCurrentPosition() / this->getLength();
-    
+
     this->transportSource.setSource(readerSource.get(),
         0,
         nullptr,
@@ -327,5 +353,10 @@ bool PlayerAudio::isFileAlreadyLoaded(const juce::File& file) {
             return true;
         }
     }
-	return false;
+    return false;
+}
+
+double PlayerAudio::getGain() const {
+    // New function merged from finalApp
+    return transportSource.getGain();
 }

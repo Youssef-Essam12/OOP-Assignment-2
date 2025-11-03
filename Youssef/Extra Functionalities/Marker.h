@@ -1,10 +1,13 @@
 #pragma once
 #include <JuceHeader.h>
-class marker : public juce::Component {
+class Marker : public juce::Component {
 public:
-	marker(double slider_x, double slider_y, double of, double p, double l) : pos(p), offset(of), length(l) {
+	Marker(double slider_x, double slider_y, double of, double p, double l) : pos(p), offset(of), length(l) {
 		this->setBounds(slider_x + of, slider_y, 10, 10);
-		++marker_cnt;
+		++Marker_cnt;
+	}
+	~Marker() {
+		--Marker_cnt;
 	}
 	void paint(juce::Graphics& g) override {
         auto bounds = getLocalBounds().toFloat();
@@ -14,7 +17,7 @@ public:
         g.fillRoundedRectangle(bounds, cornerRadius);
 	}
 	void mouseDown(const juce::MouseEvent& event) override {
-		onClick(pos, length);
+		onClick(pos);
 	}
 	double get_pos() {
 		return this->pos;
@@ -22,15 +25,15 @@ public:
 	double get_length() {
 		return this->length;
 	}
-	static int get_marker_cnt() {
-		return marker_cnt;
+	static int get_Marker_cnt() {
+		return Marker_cnt;
 	}
-	static void set_marker_cnt(int c) {
-		marker_cnt = c;
+	static void set_Marker_cnt(int c) {
+		Marker_cnt = c;
 	}
-	std::function<void(double, double)> onClick;
+	std::function<void(double)> onClick;
 private:
-	static int marker_cnt;
+	static int Marker_cnt;
 	double offset, pos, length;
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(marker);
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Marker);
 };

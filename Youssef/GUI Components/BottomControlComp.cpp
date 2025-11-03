@@ -1,12 +1,11 @@
+#pragma once
 #include <JuceHeader.h>
 #include "BottomControlComp.h"
-#include <algorithm>
-#include <random>
-#include <numeric> // Added headers for shuffle functionality
 
-BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player) {
 
-    // Position Slider setup
+BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player){
+	
+
     for (auto* slider : { &positionSlider }) {
         slider->setRange(0.0, 100, 1);
         slider->setValue(20);
@@ -20,7 +19,6 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
         slider->setTextValueSuffix(" %");
     }
 
-    // Segment Slider setup
     segmentSlider.setRange(0.0, 1.0, 1.0);
     segmentSlider.addListener(this);
     segmentSlider.setSliderStyle(juce::Slider::TwoValueHorizontal); //the two arrows esmail wanted
@@ -49,36 +47,39 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
 
     addAndMakeVisible(segmentSlider);
 
-    // Button visibility and listeners (merged)
-    addAndMakeVisible(forwardButton);
-    addAndMakeVisible(backwardButton);
+	addAndMakeVisible(forwardButton);
+	addAndMakeVisible(backwardButton);
 
-    addAndMakeVisible(muteToggle);
-    addAndMakeVisible(repeatToggle);
-    addAndMakeVisible(shuffleToggle);
-    addAndMakeVisible(abSegmentToggle);
-    addAndMakeVisible(playPauseButton);
+	addAndMakeVisible(muteToggle);
+	addAndMakeVisible(repeatToggle);
+	addAndMakeVisible(shuffleToggle);
+	addAndMakeVisible(abSegmentToggle);
+	addAndMakeVisible(playPauseButton);
     addAndMakeVisible(markerToggle);
+	//addAndMakeVisible(positionSlider);
 
-    forwardButton.addListener(this);
-    backwardButton.addListener(this);
 
-    muteToggle.addListener(this);
-    repeatToggle.addListener(this);
-    shuffleToggle.addListener(this);
-    abSegmentToggle.addListener(this);
-    playPauseButton.addListener(this);
+	forwardButton.addListener(this);
+	backwardButton.addListener(this);
+
+	muteToggle.addListener(this);
+	repeatToggle.addListener(this);
+	shuffleToggle.addListener(this);
+	abSegmentToggle.addListener(this);
+	playPauseButton.addListener(this);
     markerToggle.addListener(this);
 
-    playPauseButton.setLookAndFeel(&pp_customlook);
+	//positionSlider.addListener(this);
 
-    // Position Slider value to text function fix
+
+	playPauseButton.setLookAndFeel(&pp_customlook);
+	//playPauseButton.setColour(juce::Button::id, juce::Colours::steelblue);
+
     positionSlider.textFromValueFunction = [&](double value) {
         std::string result = "";
 
         int minutes = static_cast<int>(value) / 60;
-        // FIX: Cast value to int before subtraction to get correct seconds (from finalApp)
-        int seconds = static_cast<int>(value) - (minutes * 60);
+        int seconds = value - (minutes * 60);
 
         std::string seconds_string = std::to_string(seconds);
         if (seconds < 10) seconds_string = "0" + seconds_string;
@@ -87,7 +88,7 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
         if (minutes < 10) minutes_string = "0" + minutes_string;
 
         return minutes_string + ":" + seconds_string;
-        };
+    };
 
     positionSlider.setNumDecimalPlacesToDisplay(2);
     positionSlider.setTextValueSuffix(" s");
@@ -103,9 +104,7 @@ void BottomControlComp::add_marker(double pos)
     double markerOffset = (pos / audio_player.getOriginalLength()) * trackBounds.getWidth();
 
     std::string marker_text = "Marker ";
-    // FIX: Corrected typo from MarkerEntry::get_marker_cnt() to Marker::get_Marker_cnt()
-    marker_text += std::to_string(Marker::get_Marker_cnt() - 1);
-
+    marker_text += std::to_string(MarkerEntry::get_marker_cnt()-1);
     Marker* m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
     markers.emplace_back(m);
     addAndMakeVisible(m);
@@ -115,7 +114,7 @@ void BottomControlComp::add_marker(double pos)
         double ratio = p / audio_player.getOriginalLength();
         double new_pos = ratio * audio_player.getLength();
         audio_player.setPosition(new_pos);
-        };
+    };
     juce::Label* label = new juce::Label();
     label->setText(marker_text, juce::dontSendNotification);
     label->setJustificationType(juce::Justification::centred);
@@ -151,15 +150,15 @@ void BottomControlComp::clear_markers() {
 
 void BottomControlComp::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::black.withAlpha(0.3f));
+	g.fillAll(juce::Colours::black.withAlpha(0.3f));
 }
 
 void BottomControlComp::resized()
 {
-    auto bounds = getLocalBounds().reduced(10);
+    auto bounds = getLocalBounds().reduced(10); 
 
     positionSlider.setBounds(bounds.removeFromTop(30));
-    bounds.removeFromTop(10);
+    bounds.removeFromTop(10); 
     auto controlsRow = bounds;
     int rowHeight = controlsRow.getHeight();
 
@@ -167,7 +166,7 @@ void BottomControlComp::resized()
     int sideButtonWidth = 60;
 
     playPauseButton.setBounds(
-        (controlsRow.getWidth() - buttonSize) / 2,
+        (controlsRow.getWidth() - buttonSize)/2,
         controlsRow.getY(),
         buttonSize,
         rowHeight
@@ -187,22 +186,22 @@ void BottomControlComp::resized()
         rowHeight
     );
 
-    int toggleWidth = 70;
+    int toggleWidth = 70; 
     muteToggle.setBounds(
-        controlsRow.getX(),
+        controlsRow.getX(), 
         controlsRow.getY(),
         toggleWidth,
         rowHeight
     );
 
     repeatToggle.setBounds(
-        muteToggle.getRight() + 5,
+        muteToggle.getRight() + 5, 
         controlsRow.getY(),
         toggleWidth,
         rowHeight
     );
 
-    int loopToggleWidth = 100;
+    int loopToggleWidth = 100; 
     int shuffleToggleWidth = 80;
     int markerToggleWidth = 100;
 
@@ -222,14 +221,10 @@ void BottomControlComp::resized()
 
     markerToggle.setBounds(
         shuffleToggle.getX() - 5 - markerToggleWidth, // 10px spacing
-        // FIX: Used markerToggleWidth for correct width
         controlsRow.getY(),
-        markerToggleWidth,
+        shuffleToggleWidth,
         rowHeight
     );
-
-    // FIX: Set bounds for segmentSlider (from finalApp)
-    segmentSlider.setBounds(positionSlider.getBounds());
 }
 
 void BottomControlComp::buttonClicked(juce::Button* button)
@@ -256,11 +251,7 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     }
     else if (button == &shuffleToggle)
     {
-        // FIX: Implemented shuffle toggle logic (from finalApp)
-        shuffleOn ^= 1;
-        if (shuffleOn) {
-            generateShuffleOrder();
-        }
+        // TODO: Implement shuffle
     }
     else if (button == &abSegmentToggle)
     {
@@ -296,51 +287,8 @@ void BottomControlComp::buttonClicked(juce::Button* button)
             markersLabels[i]->setVisible(visible);
         }
     }
+
 }
-
-
-// Shuffle Helper Methods (from finalApp)
-void BottomControlComp::generateShuffleOrder() {
-
-    shuffleOrder.clear();
-    shuffleOrder.shrink_to_fit();
-
-    inverse_shuffleOrder.clear();
-    inverse_shuffleOrder.shrink_to_fit();
-
-    int playlist_size = audio_player.getPlaylistSize();
-
-    shuffleOrder.resize(playlist_size);
-    inverse_shuffleOrder.resize(playlist_size);
-
-    std::iota(shuffleOrder.begin(), shuffleOrder.end(), 0);
-
-    std::random_device rd;
-    std::mt19937 g(rd());
-
-    std::shuffle(shuffleOrder.begin(), shuffleOrder.end(), g);
-
-    for (int i = 0; i < playlist_size; i++) {
-        inverse_shuffleOrder[shuffleOrder[i]] = i;
-    }
-}
-
-int BottomControlComp::get_next_song_index(int song_index) {
-
-    int playlist_size = audio_player.getPlaylistSize();
-
-    if (playlist_size == 0) return -1;
-
-    // Get the shuffle-order index of the current song
-    int current_shuffle_index = inverse_shuffleOrder[song_index];
-
-    // Calculate the next shuffle-order index, wrapping around
-    int next_shuffle_index = (current_shuffle_index + 1) % playlist_size;
-
-    // Return the playlist index corresponding to the next shuffle-order index
-    return shuffleOrder[next_shuffle_index];
-}
-
 
 void BottomControlComp::sliderValueChanged(juce::Slider* slider)
 {
@@ -352,11 +300,7 @@ void BottomControlComp::sliderValueChanged(juce::Slider* slider)
             auto event = juce::Desktop::getInstance().getMainMouseSource();
             if (event.getCurrentModifiers().isLeftButtonDown())
             {
-                // FIX: Correct calculation to map from original length (slider value) 
-                // to current length (player position) (from finalApp)
-                double ratio = current_value / audio_player.getOriginalLength();
-                double new_position = ratio * audio_player.getLength();
-
+                double new_position = current_value / audio_player.getOriginalLength() * audio_player.getLength();
                 audio_player.setPosition(new_position);
             }
 
@@ -388,23 +332,10 @@ void BottomControlComp::update() {
     {
         if (truelengthInSeconds > 0)
         {
-            // FIX: Correct calculation for position slider value (from finalApp)
-            double current_pos = audio_player.getPosition();
-            double current_len = audio_player.getLength();
-
-            double ratio = current_pos / current_len;
-            double result = ratio * truelengthInSeconds;
+            double ratio = truelengthInSeconds / audio_player.getLength();
 
             positionSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
-            positionSlider.setValue(result, juce::dontSendNotification);
-
-            // Shuffle Autoplay Logic (from finalApp)
-            if (shuffleOn && ratio >= .999) {
-
-                if (shuffleOrder.size() != audio_player.getPlaylistSize()) generateShuffleOrder();
-
-                audio_player.playFile(get_next_song_index(audio_player.getIndex()));
-            }
+            positionSlider.setValue(ratio * audio_player.getPosition(), juce::dontSendNotification);
         }
         else {
             positionSlider.setValue(0.0, juce::dontSendNotification);

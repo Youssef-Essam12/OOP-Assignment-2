@@ -9,9 +9,7 @@ LeftNavComp::LeftNavComp() {
     viewButtons.emplace_back(new juce::TextButton("Playlist"));
     viewButtons.emplace_back(new juce::TextButton("Editor"));
     viewButtons.emplace_back(new juce::TextButton("Markers"));
-    viewButtons.emplace_back(new juce::TextButton("Mixer")); // Added Mixer button
-
-
+   
     for (auto* btn : viewButtons) {
         addAndMakeVisible(btn);
         btn->addListener(this);
@@ -58,10 +56,12 @@ void LeftNavComp::buttonClicked(juce::Button* button) {
 }
 
 void LeftNavComp::changeListenerCallback(juce::ChangeBroadcaster* source) {
-    juce::ignoreUnused(source);
+
 }
 
 void LeftNavComp::update(const juce::File& file)
 {
-    juce::ignoreUnused(file);
+
 }
+
+

@@ -1,17 +1,18 @@
+#pragma once
 #include <JuceHeader.h>
 #include "NormalViewComp.h"
 
 
 NormalViewComp::NormalViewComp(PlayerAudio& player) :
-    audio_player(player),
-    thumbnailCache(5),
-    thumbnail(512, formatManager, thumbnailCache) {
-
+audio_player(player),
+thumbnailCache(5),
+thumbnail(512, formatManager, thumbnailCache) {
+	
     formatManager.registerBasicFormats();
     thumbnail.addChangeListener(this);
 
-    // Add labels      
-    for (auto* label : { &titleLabel, &artistLabel }) {
+    // Add labels    
+    for (auto* label : { &titleLabel, &artistLabel}) {
         addAndMakeVisible(label);
     }
 
@@ -20,20 +21,21 @@ NormalViewComp::NormalViewComp(PlayerAudio& player) :
 
     artistLabel.setFont(juce::Font(14.0f));
     artistLabel.setJustificationType(juce::Justification::centred);
-}
 
+
+
+}
 NormalViewComp::~NormalViewComp() {
 
 }
 
 void NormalViewComp::resized() {
-
+    
     auto bounds = getLocalBounds();
 
-    int titleHeight = 50;
-    int artistHeight = 20;
-    int spacing = 10;
-
+    int titleHeight = 50;   
+    int artistHeight = 20;  
+    int spacing = 10;       
     titleLabel.setBounds(bounds.removeFromTop(titleHeight));
     artistLabel.setBounds(bounds.removeFromTop(artistHeight));
 
@@ -42,7 +44,6 @@ void NormalViewComp::resized() {
 
 void NormalViewComp::paint(juce::Graphics& g) {
     g.fillAll(juce::Colour(0xff1c1c1c));
-
     auto waveform = juce::Rectangle<int>(20, 170, getWidth() - 40, 300);
 
     g.setColour(juce::Colours::lightgrey);

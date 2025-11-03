@@ -7,8 +7,8 @@
 #include <functional>
 
 class BottomControlComp : public juce::Component,
-    public juce::Button::Listener,
-    public juce::Slider::Listener
+                          public juce::Button::Listener,
+                          public juce::Slider::Listener
 {
     /*
         This class containts control units:
@@ -18,7 +18,7 @@ class BottomControlComp : public juce::Component,
             - Segment slider (when toggled)
             - Shuffle button
             - Loop button
-    */
+    */ 
 public:
     BottomControlComp(PlayerAudio& audio_player);
     void resized() override;
@@ -34,17 +34,7 @@ public:
 
     std::function<void(double)> add_marker_in_markerView;
     std::function<void()> add_loaded_markers;
-private:
-    // Functions for shuffle functionality (from finalApp)
-    void generateShuffleOrder();
-    int get_next_song_index(int song_index);
-
-private:
-    // Members for shuffle functionality (from finalApp)
-    bool shuffleOn = false;
-    std::vector<int> shuffleOrder;
-    std::vector<int> inverse_shuffleOrder;
-
+private:    
     PlayerAudio& audio_player;
 
     // Sliders
@@ -64,11 +54,11 @@ private:
     juce::ToggleButton markerToggle{ "Markers" };
 
     // Segment looping bar
-    bool segmentBarVisible = false;    // controls visibility
+    bool segmentBarVisible = false;   // controls visibility
     bool segmentASet = false;
     double segmentA = -1.0;
     double segmentB = -1.0;
-
+    
     // Circular play button
     PlayPauseLook pp_customlook;
     juce::TextButton playPauseButton{ "" };
@@ -79,3 +69,5 @@ private:
     bool added_markers = 0;
     bool markers_visible = 0;
 };
+
+
