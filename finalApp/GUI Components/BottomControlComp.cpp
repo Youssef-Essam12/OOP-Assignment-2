@@ -49,8 +49,8 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
     segmentSlider.setTextValueSuffix(" s");
 
     addAndMakeVisible(segmentSlider);
+    segmentSlider.setVisible(0);
 
-    // Button visibility and listeners (merged)
     addAndMakeVisible(forwardButton);
     addAndMakeVisible(backwardButton);
 
@@ -73,12 +73,10 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
 
     playPauseButton.setLookAndFeel(&pp_customlook);
 
-    // Position Slider value to text function fix
     positionSlider.textFromValueFunction = [&](double value) {
         std::string result = "";
 
-        int minutes = static_cast<int>(value) / 60;
-        // FIX: Cast value to int before subtraction to get correct seconds (from finalApp)
+        int minutes = static_cast<int>(value) / 60;        
         int seconds = static_cast<int>(value) - (minutes * 60);
 
         std::string seconds_string = std::to_string(seconds);
@@ -139,7 +137,6 @@ void BottomControlComp::add_marker(double pos)
     addAndMakeVisible(marker_button);
     marker_button->addListener(this);
     marker_button->setVisible(visible);
-    //markersLabels.emplace_back(marker_button);
     markersImageButtons.emplace_back(marker_button);
     marker_pos.push_back(pos);
     resized();
@@ -168,6 +165,9 @@ void BottomControlComp::paint(juce::Graphics& g)
 void BottomControlComp::resized()
 {
     auto bounds = getLocalBounds().reduced(10);
+
+    segmentSlider.setBounds(bounds.removeFromTop(30));
+    bounds.removeFromTop(10);
 
     positionSlider.setBounds(bounds.removeFromTop(30));
     bounds.removeFromTop(10);
@@ -233,14 +233,10 @@ void BottomControlComp::resized()
 
     markerToggle.setBounds(
         shuffleToggle.getX() - 5 - markerToggleWidth, // 10px spacing
-        // FIX: Used markerToggleWidth for correct width
         controlsRow.getY(),
         markerToggleWidth,
         rowHeight
     );
-
-    // FIX: Set bounds for segmentSlider (from finalApp)
-    segmentSlider.setBounds(positionSlider.getBounds());
 }
 
 void BottomControlComp::buttonClicked(juce::Button* button)
@@ -267,7 +263,6 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     }
     else if (button == &shuffleToggle)
     {
-        // FIX: Implemented shuffle toggle logic (from finalApp)
         shuffleOn ^= 1;
         if (shuffleOn) {
             generateShuffleOrder();
@@ -276,7 +271,6 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     else if (button == &abSegmentToggle)
     {
         bool toggleState = abSegmentToggle.getToggleState();
-        segmentBarVisible = toggleState;
         segmentSlider.setVisible(toggleState);
 
         if (toggleState)
@@ -303,8 +297,6 @@ void BottomControlComp::buttonClicked(juce::Button* button)
         }
         bool visible = markerToggle.getToggleState();
         for (int i = 0; i < (int)markersImageButtons.size(); i++) {
-            //markers[i]->setVisible(visible);
-            //markersLabels[i]->setVisible(visible);
             markersImageButtons[i]->setVisible(visible);
         }
     }

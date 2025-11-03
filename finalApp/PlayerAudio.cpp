@@ -323,6 +323,7 @@ void PlayerAudio::enableSegmentLoop(double start, double end)
 {
     loopStart = start;
     loopEnd = end;
+    if (this->getPosition() < loopStart) this->setPosition(loopStart);
     segmentLoopActive = (start != -1 && end > start);
 }
 

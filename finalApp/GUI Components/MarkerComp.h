@@ -43,7 +43,6 @@ private:
 
     std::vector<MarkerEntry*> markerList_entries;
 
-    // only used when loading the session
     std::vector<double> marker_pos;
     int marker_cnt = 1;
 

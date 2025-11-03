@@ -196,15 +196,15 @@ PlayerGUI::~PlayerGUI()
 
     arr.clear();
 
-    //for (int i = 0; i < markerView->get_marker_cnt(); i++) {
-    //    arr.add(markerView->get_marker_pos(i));
-    //}
-    //session->setProperty("markers", arr);
+    for (int i = 0; i < markerView->get_marker_cnt(); i++) {
+        arr.add(markerView->get_marker_pos(i));
+    }
+    session->setProperty("markers", arr);
 
-    //juce::var session_json(session);
-    //juce::String jsonOutput = juce::JSON::toString(session_json, false);
-    //juce::File sessionFile("data.json");
-    //sessionFile.replaceWithText(jsonOutput);
+    juce::var session_json(session);
+    juce::String jsonOutput = juce::JSON::toString(session_json, false);
+    juce::File sessionFile("data.json");
+    sessionFile.replaceWithText(jsonOutput);
 }
 
 // === Member Functions ===
@@ -238,7 +238,7 @@ void PlayerGUI::resized()
     // Define region sizes (using float multiplication for cleaner code)
     int topBarHeight = static_cast<int>(0.05 * getWidth());
     int leftBarWidth = static_cast<int>(0.1 * getWidth());
-    int bottomBarHeight = static_cast<int>(0.05 * getWidth());
+    int bottomBarHeight = static_cast<int>(0.08 * getWidth());
 
     // Place the fixed components
     navBar->setBounds(bounds.removeFromLeft(leftBarWidth));
