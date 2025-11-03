@@ -305,7 +305,11 @@ void BottomControlComp::buttonClicked(juce::Button* button)
             if (button == markersImageButtons[i]) {
                 double ratio = marker_pos[i] / audio_player.getOriginalLength();
                 double new_pos = ratio * audio_player.getLength();
-                audio_player.setPosition(new_pos);
+                if (audio_player.isSegmentActive()) {
+                    auto segment_bounds = audio_player.getSegmentBounds();
+                    if (!(new_pos < segment_bounds.first || new_pos > segment_bounds.second)) audio_player.setPosition(new_pos);
+                }
+                else audio_player.setPosition(new_pos);
                 break;
             }
         }

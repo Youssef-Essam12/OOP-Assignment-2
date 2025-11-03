@@ -46,6 +46,10 @@ void MarkerComp::add_markers_list_entry(juce::String title, juce::String timeTex
     newEntry->onClick = [this](int i) {
         double ratio = markerList_entries[i]->get_pos() / audio_player.getOriginalLength();
         double new_pos = ratio * audio_player.getLength();
+        if (audio_player.isSegmentActive()) {
+            auto segment_bounds = audio_player.getSegmentBounds();
+            if (new_pos < segment_bounds.first || new_pos > segment_bounds.second) return;
+        }
         audio_player.setPosition(new_pos);
     };
     newEntry->onDeleteClick = [this](int i) {

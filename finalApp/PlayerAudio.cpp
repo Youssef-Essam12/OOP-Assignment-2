@@ -133,6 +133,16 @@ int PlayerAudio::getIndex() const {
     return currently_loaded_audioFile_index;
 }
 
+std::pair<double, double> PlayerAudio::getSegmentBounds()
+{
+    return { loopStart, loopEnd };
+}
+
+bool PlayerAudio::isSegmentActive()
+{
+    return segmentLoopActive;
+}
+
 int PlayerAudio::getOriginalIndex() const
 {
     return this->original_loaded_audioFile_index;

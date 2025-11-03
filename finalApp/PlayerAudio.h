@@ -57,6 +57,8 @@ public:
     double getLength() const;
     double getOriginalLength() const;
     int    getIndex() const;
+    std::pair<double, double> getSegmentBounds();
+    bool isSegmentActive();
 
     // New getters merged from the 'finalApp' branch
     int    getPlaylistSize() const;
