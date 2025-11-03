@@ -5,6 +5,8 @@
 #include <numeric> // Added headers for shuffle functionality
 #include "BinaryData.h"
 
+bool BottomControlComp::markers_visible = 0;
+
 BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player) {
 
     // Position Slider setup
@@ -143,17 +145,38 @@ void BottomControlComp::add_marker(double pos)
 }
 
 void BottomControlComp::clear_markers() {
-    for (auto* m : markers) {
-        removeChildComponent(m);
-        delete m;
-    }
-    markers.clear();
+    //for (auto* m : markers) {
+    //    removeChildComponent(m);
+    //    delete m;
+    //}
+    //markers.clear();
 
     for (auto* btn : markersImageButtons) {
         removeChildComponent(btn);
         delete btn;
     }
     markersImageButtons.clear();
+}
+
+void BottomControlComp::delete_marker(int index)
+{
+    removeChildComponent(markersImageButtons[index]);
+    delete markersImageButtons[index];
+    markersImageButtons.erase(markersImageButtons.begin() + index);
+
+    marker_pos.erase(marker_pos.begin() + index);
+    resized();
+    repaint();
+}
+
+bool BottomControlComp::getMarkersVisible()
+{
+    return markers_visible;
+}
+
+void BottomControlComp::setMarkersVisible(bool visible)
+{
+    markers_visible = visible;
 }
 
 
@@ -296,6 +319,7 @@ void BottomControlComp::buttonClicked(juce::Button* button)
             added_markers = 1;
         }
         bool visible = markerToggle.getToggleState();
+        BottomControlComp::setMarkersVisible(visible);
         for (int i = 0; i < (int)markersImageButtons.size(); i++) {
             markersImageButtons[i]->setVisible(visible);
         }

@@ -68,6 +68,7 @@ void MarkerComp::delete_marker(int index)
     delete markerList_entries[index];
     markerList_entries.erase(markerList_entries.begin() + index);
     for (int i = 0; i < (int)markerList_entries.size(); i++) markerList_entries[i]->setIndex(i);
+    delete_marker_bottomBar(index);
     resized();
     repaint();
 }
@@ -77,9 +78,19 @@ void MarkerComp::add_marker_pos(double p)
     marker_pos.push_back(p);
 }
 
+void MarkerComp::add_marker_title(juce::String title)
+{
+    marker_titles.push_back(title);
+}
+
 double MarkerComp::get_marker_pos(int i)
 {
     return markerList_entries[i]->get_pos();
+}
+
+juce::String MarkerComp::get_marker_title(int i)
+{
+    return markerList_entries[i]->get_title();
 }
 
 void MarkerComp::add_loaded_markers()
@@ -90,11 +101,13 @@ void MarkerComp::add_loaded_markers()
         int minutes = (int)currentPosition / 60;
         int seconds = (int)currentPosition % 60;
         juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
-        juce::String title = "Marker " + juce::String(marker_cnt);
+        //juce::String title = "Marker " + juce::String(marker_cnt);
+        juce::String title = marker_titles[i];
 
         add_markers_list_entry(title, timeText, marker_cnt, currentPosition);
     }
     marker_pos.clear();
+    marker_titles.clear();
 }
 
 void MarkerComp::clear_markers() {
@@ -161,7 +174,7 @@ void MarkerComp::paint(juce::Graphics& g) {
 
 void MarkerComp::buttonClicked(juce::Button* button) {
     if (button == &addMarkerButton) {
-        if (audio_player.getIndex() == -1) return;
+        if (audio_player.getIndex() == -1 || !BottomControlComp::getMarkersVisible()) return;
         double currentPosition = audio_player.getPosition();
         double originalPosition = (currentPosition / audio_player.getLength()) * audio_player.getOriginalLength();
 

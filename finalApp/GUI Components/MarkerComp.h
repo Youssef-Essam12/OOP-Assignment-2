@@ -4,6 +4,7 @@
 #include "NormalViewComp.h"
 #include "../Extra Functionalities/Marker.h"
 #include "MarkerEntry.h"
+#include "BottomControlComp.h"
 
 #include <functional>
 
@@ -23,15 +24,18 @@ public:
 
     // only used when loading the session
     void add_marker_pos(double p);
-    double get_marker_pos(int i);
+    void add_marker_title(juce::String title);
     void add_loaded_markers();
 
     void clear_markers();
 
     int get_marker_cnt();
+    double get_marker_pos(int i);
+    juce::String get_marker_title(int i);
     void set_market_cnt(int cnt);
 
     std::function<void(double)> add_marker_bottomBar;
+    std::function<void(int)> delete_marker_bottomBar;
     std::function<void()> clear_markers_buttomBar;
 private:
     PlayerAudio& audio_player;
@@ -42,10 +46,11 @@ private:
     juce::TextButton clearMarkersButton;
 
     std::vector<MarkerEntry*> markerList_entries;
-
+    // used only when loading the saved session 
     std::vector<double> marker_pos;
-    int marker_cnt = 1;
+    std::vector<juce::String> marker_titles;
 
+    int marker_cnt = 1;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MarkerComp);
 
 };

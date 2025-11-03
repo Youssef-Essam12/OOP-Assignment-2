@@ -100,6 +100,11 @@ double MarkerEntry::get_pos()
     return time;
 }
 
+juce::String MarkerEntry::get_title()
+{
+    return title;
+}
+
 void MarkerEntry::buttonClicked(juce::Button* button)
 {
     if (button == &deleteButton) {

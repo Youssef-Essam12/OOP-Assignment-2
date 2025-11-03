@@ -14,6 +14,7 @@ public:
 	void setIndex(int i);
 
 	double get_pos();
+	juce::String get_title();
 
 	void buttonClicked(juce::Button* button);
 	void mouseDown(const juce::MouseEvent& event) override;
