@@ -37,6 +37,12 @@ private:
     juce::Viewport playlistViewport;
 
     bool playlist_componenet_visible = true;
+
+    juce::Component* playlistHeader;
+    juce::Label* titleLabel;
+    juce::Label* authorLabel;
+
+    void create_header();
     
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlaylistViewComp);

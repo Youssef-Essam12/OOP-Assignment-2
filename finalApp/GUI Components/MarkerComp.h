@@ -16,6 +16,8 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
 
+    void update();
+
     void buttonClicked(juce::Button* button);
 
     void display_markers_menu();
@@ -51,6 +53,12 @@ private:
     std::vector<juce::String> marker_titles;
 
     int marker_cnt = 1;
+
+    juce::Component* markerHeader;
+    juce::Label* titleHeaderLabel;
+    juce::Label* timeHeaderLabel;
+
+    void create_header();
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MarkerComp);
 
 };

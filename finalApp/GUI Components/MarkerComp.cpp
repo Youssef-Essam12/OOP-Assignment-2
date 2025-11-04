@@ -16,11 +16,34 @@ MarkerComp::MarkerComp(PlayerAudio& player) : audio_player(player) {
     clearMarkersButton.setButtonText("Clear Markers");
     clearMarkersButton.addListener(this);
     addAndMakeVisible(clearMarkersButton);
-
+    create_header();
     display_markers_menu();
 }
 
 MarkerComp::~MarkerComp() {
+}
+
+void MarkerComp::create_header() {
+    // Create a component for the header
+    markerHeader = new juce::Component();
+
+    // Create labels for each column (Title and Time, matching MarkerEntry)
+    titleHeaderLabel = new juce::Label("titleHeaderLabel", "Title");
+    timeHeaderLabel = new juce::Label("timeHeaderLabel", "Time");
+
+    // Style the labels to match the theme
+    titleHeaderLabel->setFont(juce::Font(14.0f, juce::Font::bold));
+    titleHeaderLabel->setColour(juce::Label::textColourId, juce::Colour(0xffaaaaaa));
+    titleHeaderLabel->setJustificationType(juce::Justification::centredLeft);
+
+    timeHeaderLabel->setFont(juce::Font(14.0f, juce::Font::bold));
+    timeHeaderLabel->setColour(juce::Label::textColourId, juce::Colour(0xffaaaaaa));
+    timeHeaderLabel->setJustificationType(juce::Justification::centredLeft);
+
+    markerHeader->addAndMakeVisible(titleHeaderLabel);
+    markerHeader->addAndMakeVisible(timeHeaderLabel);
+
+    marker_list_component->addAndMakeVisible(markerHeader);
 }
 
 void MarkerComp::display_markers_menu() {
@@ -136,6 +159,7 @@ void MarkerComp::set_market_cnt(int cnt)
 void MarkerComp::resized() {
     const int margin = 10;
     const int buttonHeight = 40;
+    const int headerHeight = 30;
     const int buttonSpacing = 10;
 
     auto bounds = getLocalBounds().reduced(margin);
@@ -154,12 +178,24 @@ void MarkerComp::resized() {
     markerlistViewport.setScrollBarsShown(true, false);
 
     int contentWidth = bounds.getWidth();
-    int requiredHeight = (int)markerList_entries.size() * (buttonHeight + buttonSpacing) + buttonSpacing;
+    int requiredHeight = headerHeight + (int)markerList_entries.size() * (buttonHeight + buttonSpacing) + buttonSpacing;
     int contentHeight = std::max(bounds.getHeight(), requiredHeight);
     marker_list_component->setSize(contentWidth, contentHeight);
 
     const int entryComponentWidth = contentWidth - (2 * margin);
-    int currentY = buttonSpacing;
+    markerHeader->setBounds(margin, 0, entryComponentWidth, headerHeight);
+
+    const int padding = 5;
+    const int deleteButtonWidth = 40;
+
+    int combinedContentWidth = entryComponentWidth - deleteButtonWidth - margin;
+    int titleWidth = (combinedContentWidth * 4) / 10;
+    int timeWidth = combinedContentWidth - titleWidth;
+
+    titleHeaderLabel->setBounds(0, 0, titleWidth, headerHeight);
+    timeHeaderLabel->setBounds(titleWidth, 0, timeWidth, headerHeight);
+
+    int currentY = headerHeight + buttonSpacing;
     for (int i = 0; i < markerList_entries.size(); ++i) {
         markerList_entries[i]->setBounds(margin,
             currentY,
@@ -168,6 +204,7 @@ void MarkerComp::resized() {
         currentY += buttonHeight + buttonSpacing;
     }
 }
+
 
 void MarkerComp::paint(juce::Graphics& g) {
     g.fillAll(juce::Colour(0xff1c1c1c));
@@ -191,4 +228,8 @@ void MarkerComp::buttonClicked(juce::Button* button) {
         if (audio_player.getIndex() == -1) return;
         clear_markers();
     }
+}
+
+void MarkerComp::update() {
+    if (audio_player.getOriginalIndex() != audio_player.getIndex()) clear_markers();
 }

@@ -384,8 +384,6 @@ void PlayerGUI::setView(View newView)
             break;
         }
     }
-
-    // --- Step 4: Final Update ---
     resized();
     repaint();
 }
@@ -395,16 +393,15 @@ void PlayerGUI::timerCallback()
 {
     if (audio_player.isWokring())
     {
-        // Update control bar (position/time)
         controlBar->update();
-
-        // Update normal view (waveform, track info)
-        normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
     }
-
-    // Update the mixer view if active
     if (currentView == View::Mixer && mixerView)
     {
         mixerView->updateGains();
+    }
+    if (audio_player.getOriginalIndex() != audio_player.getIndex()) {
+        normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
+        markerView->update();
+        audio_player.setOriginalIndex(audio_player.getIndex());
     }
 }

@@ -77,13 +77,10 @@ void NormalViewComp::changeListenerCallback(juce::ChangeBroadcaster* source) {
 
 void NormalViewComp::update(const juce::File& file)
 {
-    if (audio_player.getOriginalIndex() != audio_player.getIndex()) {
-        titleLabel.setText((audio_player.isWokring() ? audio_player.getTitle() : ""), juce::dontSendNotification);
-        artistLabel.setText((audio_player.isWokring() ? audio_player.getArtist() : ""), juce::dontSendNotification);
-        thumbnail.setSource(new juce::FileInputSource(file));
-        updateTrackInfo();
-        audio_player.setOriginalIndex(audio_player.getIndex());
-    }
+    titleLabel.setText((audio_player.isWokring() ? audio_player.getTitle() : ""), juce::dontSendNotification);
+    artistLabel.setText((audio_player.isWokring() ? audio_player.getArtist() : ""), juce::dontSendNotification);
+    thumbnail.setSource(new juce::FileInputSource(file));
+    updateTrackInfo();
     repaint();
 }
 
