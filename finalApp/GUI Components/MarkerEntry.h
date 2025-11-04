@@ -2,7 +2,7 @@
 #include <JuceHeader.h>
 #include <functional>
 
-class MarkerEntry : public juce::Component, juce::Button::Listener, juce::Label::Listener {
+class MarkerEntry : public juce::Component, juce::Button::Listener {
 public:
 	MarkerEntry(const juce::String& t, const juce::String& a, int i, double marker_time);
 	~MarkerEntry() override;
@@ -18,8 +18,6 @@ public:
 
 	void buttonClicked(juce::Button* button);
 	void mouseDown(const juce::MouseEvent& event) override;
-
-	void labelTextChanged(juce::Label* label);
 
 	std::function<void(int)> onClick;
 	std::function<void(int)> onDeleteClick;

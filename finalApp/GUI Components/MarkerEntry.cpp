@@ -8,10 +8,8 @@ MarkerEntry::MarkerEntry(const juce::String& t, const juce::String& a, int i, do
     titleLabel->setColour(juce::Label::textColourId, juce::Colours::white);
     titleLabel->setJustificationType(juce::Justification::centredLeft);
 
-    // Allow double-click editing and intercept clicks
     titleLabel->setEditable(false, true, false);
-    titleLabel->setInterceptsMouseClicks(true, true);
-    titleLabel->addListener(this);
+    titleLabel->setInterceptsMouseClicks(false, false);
     addAndMakeVisible(*titleLabel);
 
     timeLabel.reset(new juce::Label("Time", timeText));
@@ -112,19 +110,27 @@ void MarkerEntry::buttonClicked(juce::Button* button)
     }
 }
 
-void MarkerEntry::labelTextChanged(juce::Label* label)
-{
-    if (label == titleLabel.get()) {
-        title = label->getText();
-    }
-}
-
 
 void MarkerEntry::mouseDown(const juce::MouseEvent& event)
 {
-    //onClick(index);
-    if (!titleLabel->getBounds().contains(event.getPosition()))
+    if (titleLabel->getBounds().contains(event.getPosition()))
+    {
+        if (event.getNumberOfClicks() == 2)
+        {
+            titleLabel->showEditor();
+        }
+        else if (event.getNumberOfClicks() == 1)
+        {
+            juce::Timer::callAfterDelay(200, [this]()
+                {
+                    if (!titleLabel->isBeingEdited()) onClick(index);
+                });
+        }
+    }
+    else
     {
         onClick(index);
     }
 }
+
+
