@@ -1,7 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
 #include "../PlayerAudio.h"
-#include "../Extra Functionalities/PlayPauseLook.h"
 #include "MarkerComp.h"
 #include <functional>
 
@@ -31,18 +30,22 @@ public:
     void add_marker(double pos);
     void clear_markers();
     void delete_marker(int index);
+    void setplayPauseButton(bool play);
 
     static bool getMarkersVisible();
     static void setMarkersVisible(bool visible);
 
     std::function<void(double)> add_marker_in_markerView;
     std::function<void()> add_loaded_markers;
-private:
+    std::function<void(int)> play_audio_shuffle;
     // Functions for shuffle functionality (from finalApp)
+
+
+private:
+    
     void generateShuffleOrder();
     int get_next_song_index(int song_index);
 
-private:
     // Members for shuffle functionality (from finalApp)
     bool shuffleOn = false;
     std::vector<int> shuffleOrder;
@@ -72,9 +75,9 @@ private:
     double segmentA = -1.0;
     double segmentB = -1.0;
 
-    // Circular play button
-    PlayPauseLook pp_customlook;
-    juce::TextButton playPauseButton{ "" };
+
+    juce::ImageButton playPauseButton;
+    juce::Image playIcon, pauseIcon;
 
     //std::vector<Marker*> markers;
     //std::vector<juce::Label*> markersLabels;

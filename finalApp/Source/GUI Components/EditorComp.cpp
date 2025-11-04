@@ -144,7 +144,15 @@ void EditorComp::sliderValueChanged(juce::Slider* slider)
     }
 }
 
-void EditorComp::update(const juce::File& file)
+void EditorComp::update()
 {
-
+    auto current_speed = speedSlider.getValue();
+    audio_player.setSpeed(current_speed/100);
+    low_eq.setValue(0.0);
+    mid_eq.setValue(0.0);
+    high_eq.setValue(0.0);
+    reverbSlider.setValue(0.0);
+    audio_player.updateReverb(0.0, 0.0, 0.0, 1.0, 0.0);
+    resized();
+    repaint();
 }

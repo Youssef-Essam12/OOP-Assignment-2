@@ -10,10 +10,9 @@
 #include "GUI Components/PlaylistViewComp.h"
 #include "GUI Components/EditorComp.h"
 #include "GUI Components/MarkerComp.h"
-#include "GUI Components/MinimizedViewComp.h"
 #include "GUI Components/MixerViewComp.h"
 #include "Extra Functionalities/FloatingVolumeSlider.h"
-
+#include <taglib/tag.h>
 // === PlayerGUI Constructor and Destructor ===
 
 juce::String PlayerAudio::last_played_audio_path = "";
@@ -26,9 +25,6 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
     // Initialize components
     topBar = std::make_unique<TopBarComp>(audio_player);
     addAndMakeVisible(topBar.get());
-
-    miniView = std::make_unique<MinimizedViewComp>(audio_player);
-    addAndMakeVisible(miniView.get());
 
     normalView = std::make_unique<NormalViewComp>(audio_player);
     addAndMakeVisible(normalView.get());
@@ -63,9 +59,10 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
 
     playlistView->onAudioSelected = [&](int index) {
         audio_player.playFile(index);
+        editorView->update();
         normalView->update(audio_player.getPlaylistFile(index));
         markerView->clear_markers();
-        };
+    };
 
     navBar->set_view = [&](int view_index) {
         // Use static_cast for robustness and clarity
@@ -82,7 +79,7 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
     };
     markerView->clear_markers_buttomBar = [&]() {
         controlBar->clear_markers();
-        };
+    };
 
     controlBar->add_marker_in_markerView = [&](double pos) {
         double currentPosition = pos;
@@ -97,6 +94,10 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
 
     controlBar->add_loaded_markers = [&]() {
         markerView->add_loaded_markers();
+    };
+
+    controlBar->play_audio_shuffle = [&](int index) {
+        playlistView->onAudioSelected(index);
     };
 
     // Initial setup
@@ -164,7 +165,6 @@ skip_loading:
     normalView->setVisible(false);
     playlistView->setVisible(false);
     editorView->setVisible(false);
-    miniView->setVisible(false);
     mixerView->setVisible(false);
     markerView->setVisible(false);
 
@@ -224,21 +224,9 @@ double PlayerGUI::getMixPercentage() {
     return mixerView->getPercentage();
 }
 
-void PlayerGUI::handleMinimisedStateChange(bool isMinimised) {
-    // New functionality from finalApp branch
-    if (isMinimised)
-    {
-        setView(View::Minimized);
-    }
-    else
-    {
-        setView(View::Normal);
-    }
-}
-
 void PlayerGUI::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::white);
+    g.fillAll(juce::Colour::fromString("FF121217"));
 }
 
 void PlayerGUI::resized()
@@ -282,9 +270,6 @@ void PlayerGUI::resized()
     case View::Marker:
         markerView->setBounds(bounds);
         break;
-    case View::Minimized:
-        miniView->setBounds(getLocalBounds()); // Minimized usually takes the whole window
-        break;
     case View::Mixer:
         mixerView->setBounds(bounds);
         break;
@@ -309,9 +294,6 @@ void PlayerGUI::setView(View newView)
         break;
     case View::Marker:
         markerView->setVisible(false);
-        break;
-    case View::Minimized:
-        miniView->setVisible(false);
         break;
     case View::Mixer:
         mixerView->setVisible(false);
@@ -343,12 +325,7 @@ void PlayerGUI::setView(View newView)
 
     currentView = newView; // Set the new view state
 
-    if (currentView == View::Minimized)
-    {
-        miniView->setVisible(true);
-        // topBar, navBar, controlBar, etc., remain hidden
-    }
-    else if (currentView == View::Mixer)
+    if (currentView == View::Mixer)
     {
         // Mixer view setup
         navBar->setVisible(true); // Keep nav bar
@@ -393,14 +370,10 @@ void PlayerGUI::timerCallback()
     if (audio_player.isWokring())
     {
         controlBar->update();
+        normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
     }
     if (currentView == View::Mixer && mixerView)
     {
         mixerView->updateGains();
-    }
-    if (audio_player.getOriginalIndex() != audio_player.getIndex()) {
-        normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
-        markerView->update();
-        audio_player.setOriginalIndex(audio_player.getIndex());
     }
 }

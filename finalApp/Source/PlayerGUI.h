@@ -13,7 +13,6 @@ class EditorComp;
 class MarkerComp;
 
 // Components added in finalApp branch
-class MinimizedViewComp;
 class MixerViewComp;
 class FloatingVolumeSlider;
 
@@ -39,7 +38,7 @@ public:
     double getMixPercentage();
 
     // Updated View enum to include Minimized and Mixer
-    enum class View { Normal, Playlist, Editor, Marker, Mixer, Minimized };
+    enum class View { Normal, Playlist, Editor, Marker, Mixer };
 
 private:
     void setView(View newView);
@@ -65,7 +64,6 @@ private:
     std::unique_ptr<MarkerComp> markerView;
 
     // New view components
-    std::unique_ptr<MinimizedViewComp> miniView;
     std::unique_ptr<MixerViewComp> mixerView;
 
     // Floating Volume Slider

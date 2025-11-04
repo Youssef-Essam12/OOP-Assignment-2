@@ -45,25 +45,6 @@ private:
             removeComponentListener(this); // Stop listening (from finalApp)
         }
 
-        // Implementation of juce::ComponentListener's virtual functions (from finalApp)
-        void componentVisibilityChanged(juce::Component& component) override
-        {
-            if (&component == this)
-            {
-                // Note: !isVisible() correctly checks for the minimized state
-                bool isMinimised = !isVisible();
-
-                if (mainComponentPtr != nullptr)
-                {
-                    // Access the PlayerGUI and notify it of the minimization state change
-                    if (auto* gui = mainComponentPtr->getGUI())
-                    {
-                        gui->handleMinimisedStateChange(isMinimised);
-                    }
-                }
-            }
-        }
-
         void componentMovedOrResized(juce::Component& component, bool wasMoved, bool wasResized) override
         {
             // Implementation for move/resize logic if needed, but empty here.

@@ -4,7 +4,7 @@ FloatingVolumeSlider::FloatingVolumeSlider(PlayerAudio& player) : audio_player(p
 {
     volumeSlider.setSliderStyle(juce::Slider::LinearVertical);
     volumeSlider.setRange(0.0, 1.0, 0.01);
-    volumeSlider.setValue(audio_player.isWokring() ? audio_player.getGain() : 0.75);
+    volumeSlider.setValue(audio_player.isWokring() ? audio_player.getGain() : 0.25);
     volumeSlider.addListener(this);
     addChildComponent(volumeSlider); 
     volumeSlider.setVisible(false);

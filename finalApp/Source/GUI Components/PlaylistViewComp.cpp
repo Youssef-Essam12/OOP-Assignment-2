@@ -73,9 +73,11 @@ void PlaylistViewComp::display_playlist_menu() {
 }
 
 void PlaylistViewComp::add_playlist_entry(const juce::File& file) {
-    juce::String fileName = file.getFileNameWithoutExtension();
 
-    PlaylistEntry* newEntry = new PlaylistEntry(fileName, "Esmail", audio_player.getAudioCount() - 1);
+    int file_index = audio_player.getPlaylistSize() - 1;
+
+
+    PlaylistEntry* newEntry = new PlaylistEntry(audio_player.getTitle(file_index), audio_player.getArtist(file_index), audio_player.getAudioCount() - 1);
     newEntry->onClick = [&](int i) {
         this->onAudioSelected(i);
         };

@@ -53,7 +53,8 @@ void NormalViewComp::paint(juce::Graphics& g) {
         g.drawFittedText("No Audio Loaded", waveform, juce::Justification::centred, 1);
     }
     else {
-        g.setColour(juce::Colours::hotpink);
+        const juce::Colour waveformColor = juce::Colour::fromString("FF00BCD4");
+        g.setColour(waveformColor);
         thumbnail.drawChannels(g, waveform, 0.0, thumbnail.getTotalLength(), 1.0f);
 
         double pos = audio_player.getPosition();
@@ -77,15 +78,20 @@ void NormalViewComp::changeListenerCallback(juce::ChangeBroadcaster* source) {
 
 void NormalViewComp::update(const juce::File& file)
 {
-    titleLabel.setText((audio_player.isWokring() ? audio_player.getTitle() : ""), juce::dontSendNotification);
-    artistLabel.setText((audio_player.isWokring() ? audio_player.getArtist() : ""), juce::dontSendNotification);
-    thumbnail.setSource(new juce::FileInputSource(file));
-    updateTrackInfo();
-    repaint();
+    if (audio_player.getOriginalIndex() != audio_player.getIndex()) {
+        int index = audio_player.getIndex();
+        titleLabel.setText((audio_player.isWokring() ? audio_player.getTitle(index) : ""), juce::dontSendNotification);
+        artistLabel.setText((audio_player.isWokring() ? audio_player.getArtist(index) : ""), juce::dontSendNotification);
+        thumbnail.setSource(new juce::FileInputSource(file));
+        updateTrackInfo();
+        repaint();
+        audio_player.setOriginalIndex(audio_player.getIndex());
+    }
 }
 
 void NormalViewComp::updateTrackInfo()
 {
-    titleLabel.setText((audio_player.isWokring() ? audio_player.getTitle() : ""), juce::dontSendNotification);
-    artistLabel.setText((audio_player.isWokring() ? audio_player.getArtist() : ""), juce::dontSendNotification);
+    int index = audio_player.getIndex();
+    titleLabel.setText((audio_player.isWokring() ? audio_player.getTitle(index) : ""), juce::dontSendNotification);
+    artistLabel.setText((audio_player.isWokring() ? audio_player.getArtist(index) : ""), juce::dontSendNotification);
 }

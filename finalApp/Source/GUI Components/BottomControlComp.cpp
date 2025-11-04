@@ -2,7 +2,7 @@
 #include "BottomControlComp.h"
 #include <algorithm>
 #include <random>
-#include <numeric> // Added headers for shuffle functionality
+#include <numeric>
 #include "BinaryData.h"
 
 bool BottomControlComp::markers_visible = 0;
@@ -73,8 +73,6 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
     playPauseButton.addListener(this);
     markerToggle.addListener(this);
 
-    playPauseButton.setLookAndFeel(&pp_customlook);
-
     positionSlider.textFromValueFunction = [&](double value) {
         std::string result = "";
 
@@ -92,6 +90,28 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
 
     positionSlider.setNumDecimalPlacesToDisplay(2);
     positionSlider.setTextValueSuffix(" s");
+
+    const juce::Colour accentColor = juce::Colour::fromString("FF00BCD4");
+
+    positionSlider.setColour(juce::Slider::thumbColourId, accentColor);
+    positionSlider.setColour(juce::Slider::trackColourId, juce::Colour::fromRGB(255,255,255));
+
+    muteToggle.setColour(juce::ToggleButton::textColourId, accentColor);
+    repeatToggle.setColour(juce::ToggleButton::textColourId, accentColor);
+    shuffleToggle.setColour(juce::ToggleButton::textColourId, accentColor);
+    abSegmentToggle.setColour(juce::ToggleButton::textColourId, accentColor);
+    markerToggle.setColour(juce::ToggleButton::textColourId, accentColor);
+
+    const auto* data_1 = BinaryData::play_png;
+    const int dataSize_1 = BinaryData::play_pngSize;
+    playIcon = juce::ImageFileFormat::loadFrom(data_1, dataSize_1);
+
+    const auto* data_2= BinaryData::pause_png;
+    const int dataSize_2 = BinaryData::pause_pngSize;
+    pauseIcon = juce::ImageFileFormat::loadFrom(data_2, dataSize_2);
+
+    setplayPauseButton(1);
+    
 }
 
 void BottomControlComp::add_marker(double pos)
@@ -104,18 +124,6 @@ void BottomControlComp::add_marker(double pos)
     double markerOffset = (pos / audio_player.getOriginalLength()) * trackBounds.getWidth();
     bool visible = markerToggle.getToggleState();
 
-    //std::string marker_text = "Marker ";
-    //marker_text += std::to_string(Marker::get_Marker_cnt() - 1);
-
-    //Marker* m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
-    //markers.emplace_back(m);
-    //addAndMakeVisible(m);
-    //m->setVisible(visible);
-    //m->onClick = [this](double p) {
-    //    double ratio = p / audio_player.getOriginalLength();
-    //    double new_pos = ratio * audio_player.getLength();
-    //    audio_player.setPosition(new_pos);
-    //};
     const auto* data = BinaryData::marker_png;
     const int dataSize = BinaryData::marker_pngSize;
     auto marker_icon = juce::ImageFileFormat::loadFrom(data, dataSize);
@@ -125,11 +133,9 @@ void BottomControlComp::add_marker(double pos)
         marker_icon, 1.0f, juce::Colours::transparentWhite,
         marker_icon, 1.0f, juce::Colours::transparentWhite,
         marker_icon, 1.0f, juce::Colours::transparentWhite);
-    //label->setText(marker_text, juce::dontSendNotification);
-    //marker_button->setJustificationType(juce::Justification::centred);
-    /*label->setFont(juce::Font(10.0f, juce::Font::bold));
-    label->setColour(juce::Label::textColourId, juce::Colours::white);
-    label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);*/
+
+
+
 
     int labelWidth = 50;
     int labelHeight = 15;
@@ -182,7 +188,7 @@ void BottomControlComp::setMarkersVisible(bool visible)
 
 void BottomControlComp::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::black.withAlpha(0.3f));
+    g.fillAll(juce::Colour::fromString("FF1F222A").withAlpha(0.9f));
 }
 
 void BottomControlComp::resized()
@@ -197,7 +203,7 @@ void BottomControlComp::resized()
     auto controlsRow = bounds;
     int rowHeight = controlsRow.getHeight();
 
-    int buttonSize = 50;
+    int buttonSize = 30;
     int sideButtonWidth = 60;
 
     playPauseButton.setBounds(
@@ -236,7 +242,7 @@ void BottomControlComp::resized()
         rowHeight
     );
 
-    int loopToggleWidth = 100;
+    int loopToggleWidth = 150;
     int shuffleToggleWidth = 80;
     int markerToggleWidth = 100;
 
@@ -266,6 +272,7 @@ void BottomControlComp::buttonClicked(juce::Button* button)
 {
     if (button == &playPauseButton)
     {
+        setplayPauseButton(audio_player.isPlaying());
         audio_player.play_pause();
     }
     else if (button == &forwardButton)
@@ -394,8 +401,6 @@ void BottomControlComp::sliderValueChanged(juce::Slider* slider)
             auto event = juce::Desktop::getInstance().getMainMouseSource();
             if (event.getCurrentModifiers().isLeftButtonDown())
             {
-                // FIX: Correct calculation to map from original length (slider value) 
-                // to current length (player position) (from finalApp)
                 double ratio = current_value / audio_player.getOriginalLength();
                 double new_position = ratio * audio_player.getLength();
 
@@ -444,8 +449,13 @@ void BottomControlComp::update() {
             if (shuffleOn && ratio >= .999) {
 
                 if (shuffleOrder.size() != audio_player.getPlaylistSize()) generateShuffleOrder();
-
-                audio_player.playFile(get_next_song_index(audio_player.getIndex()));
+                int current_song_index = audio_player.getIndex();
+                int next_song_index = get_next_song_index(current_song_index);
+                bool is_last_song = inverse_shuffleOrder[next_song_index] == 0;
+                if(!is_last_song
+                    || repeatToggle.getToggleState() && is_last_song)
+                    play_audio_shuffle(next_song_index);
+                //audio_player.playFile(get_next_song_index(audio_player.getIndex()));
             }
         }
         else {
@@ -457,4 +467,20 @@ void BottomControlComp::update() {
         segmentSlider.setRange(0.0, truelengthInSeconds, juce::dontSendNotification);
     }
     repaint();
+}
+
+void BottomControlComp::setplayPauseButton(bool play) {
+    float size = 1.0f;
+    if (!play) {
+        playPauseButton.setImages(false, true, true,
+            pauseIcon, size, juce::Colours::transparentWhite,
+            pauseIcon, size, juce::Colours::transparentWhite,
+            pauseIcon, size, juce::Colours::transparentWhite);
+    }
+    else {
+        playPauseButton.setImages(false, true, true,
+            playIcon, size, juce::Colours::transparentWhite,
+            playIcon, size, juce::Colours::transparentWhite,
+            playIcon, size, juce::Colours::transparentWhite);
+    }
 }

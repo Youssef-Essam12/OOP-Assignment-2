@@ -1,5 +1,7 @@
 #pragma once
 #include "PlayerAudio.h"
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
 
 PlayerAudio::PlayerAudio() {
     formatManager.registerBasicFormats();
@@ -161,8 +163,12 @@ void PlayerAudio::stop() {
     transportSource.setPosition(0.0);
 }
 
+bool PlayerAudio::isPlaying() {
+    return transportSource.isPlaying();
+}
+
 void PlayerAudio::play_pause() {
-    if (transportSource.isPlaying()) {
+    if (isPlaying()) {
         transportSource.stop();
     }
     else {
@@ -177,6 +183,9 @@ void PlayerAudio::setGain(float gain) {
     transportSource.setGain(gain);
 }
 
+juce::String tagstring_to_string(const TagLib::String& s) {
+    return juce::String(s.toCString(1));
+}
 
 bool PlayerAudio::load(const juce::File& file) {
     if (file.existsAsFile())
@@ -187,13 +196,31 @@ bool PlayerAudio::load(const juce::File& file) {
             audioFileMetadata.emplace_back(MetaDataWraper());
             auto& [title, artist] = audioFileMetadata.back();
 
-            const auto& metadata = reader->metadataValues;
-            title = metadata.getValue("TITLE", file.getFileNameWithoutExtension());
-            artist = metadata.getValue("TPE1", metadata.getValue("ARTIST", "Unknown Artist"));
+            TagLib::FileName path = file.getFullPathName().toUTF8();
+            TagLib::FileRef f(path);
+
+
+
+            if (!f.isNull() && f.tag()) {
+                auto* tag = f.tag();
+                auto tagtitle = tagstring_to_string(tag->title());
+                auto tagart = tagstring_to_string(tag->artist());
+
+                title = tagtitle;
+                artist = tagart;
+            }
+
+            if (title.isEmpty()) {
+                title = file.getFileNameWithoutExtension();
+            }
+
+            if (artist.isEmpty()) {
+                artist = "Unknown Artist";
+            }
+
 
             audioReaders.push_back(std::unique_ptr<juce::AudioFormatReader>(reader));
 
-            // FIX: Ensure correct double casting of lengthInSamples (from finalApp)
             this->original_audio_length_in_seconds.emplace_back((double)reader->lengthInSamples / reader->sampleRate);
             return true;
         }
@@ -210,7 +237,6 @@ bool PlayerAudio::playFile(int index) {
         transportSource.stop();
         transportSource.setSource(nullptr);
         readerSource.reset();
-
         readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, false);
 
         this->sample_rate = reader->sampleRate;
@@ -252,16 +278,16 @@ double PlayerAudio::getLength() const {
     return transportSource.getLengthInSeconds();
 }
 
-juce::String PlayerAudio::getTitle() const {
+juce::String PlayerAudio::getTitle(int file_index) const {
     // FIX: Add index validity check (from finalApp)
-    if (currently_loaded_audioFile_index >= 0 && currently_loaded_audioFile_index < audioFileMetadata.size())
-        return audioFileMetadata[currently_loaded_audioFile_index].title;
+    if (file_index >= 0 && file_index < audioFileMetadata.size())
+        return audioFileMetadata[file_index].title;
     return {}; // Return empty String for safety
 }
-juce::String PlayerAudio::getArtist() const {
+juce::String PlayerAudio::getArtist(int file_index) const {
     // FIX: Add index validity check (from finalApp)
-    if (currently_loaded_audioFile_index >= 0 && currently_loaded_audioFile_index < audioFileMetadata.size())
-        return audioFileMetadata[currently_loaded_audioFile_index].artist;
+    if (file_index >= 0 && file_index < audioFileMetadata.size())
+        return audioFileMetadata[file_index].artist;
     return {}; // Return empty String for safety
 }
 

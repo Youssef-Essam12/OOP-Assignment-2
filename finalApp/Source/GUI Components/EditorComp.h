@@ -15,7 +15,7 @@ public:
 
     void sliderValueChanged(juce::Slider* slider);
 
-    void update(const juce::File& file);
+    void update();
 
 
 private:
@@ -26,7 +26,7 @@ private:
     juce::Slider speedSlider;
 
     juce::Label lowLabel, midLabel, highLabel, reverbLabel, speedLabel;
-    float low_eq_value, mid_eq_value, high_eq_value;
+    float low_eq_value, mid_eq_value, high_eq_value, speed_value;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorComp);

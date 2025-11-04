@@ -33,6 +33,21 @@ MixerViewComp::MixerViewComp(PlayerAudio& audio_player_1, PlayerAudio& audio_pla
     percentage_slider.setRange(0.0, 1.0, 0.01); // 0.0 = p1, 1.0 = p2
     percentage_slider.setValue(0.5); 
 
+    const juce::Colour accentColor = juce::Colour::fromString("FF00BCD4");
+
+    position_1_slider.setColour(juce::Slider::thumbColourId, accentColor);
+    position_2_slider.setColour(juce::Slider::thumbColourId, accentColor);
+    audio_1_slider.setColour(juce::Slider::thumbColourId, accentColor);
+    audio_2_slider.setColour(juce::Slider::thumbColourId, accentColor);
+
+    percentage_slider.setColour(juce::Slider::trackColourId, juce::Colour::fromRGB(255, 255, 255));
+
+    const juce::Colour bg_sliders = juce::Colour::fromRGB(150, 255, 255);
+    position_1_slider.setColour(juce::Slider::trackColourId, bg_sliders);
+    position_2_slider.setColour(juce::Slider::trackColourId, bg_sliders);
+    audio_1_slider.setColour(juce::Slider::trackColourId, bg_sliders);
+    audio_2_slider.setColour(juce::Slider::trackColourId, bg_sliders);
+
     addAndMakeVisible(audio_1_slider);
     addAndMakeVisible(audio_2_slider);
     addAndMakeVisible(position_1_slider);
@@ -56,15 +71,15 @@ void MixerViewComp::resized() {
     auto mixerBounds = bounds.removeFromBottom(100).reduced(10); // 10px padding
 
     auto p1bounds = bounds.removeFromLeft(bounds.getWidth() / 2).reduced(10);
-    auto p2bounds = bounds.reduced(10); // The rest of the top area
+    auto p2bounds = bounds.reduced(10);
 
     audio_player_1_load_button.setBounds(p1bounds.removeFromTop(30));
     position_1_slider.setBounds(p1bounds.removeFromTop(20));
-    audio_player_1_play_button.setBounds(p1bounds.removeFromTop(40).reduced(30, 0)); // Added Play button
+    audio_player_1_play_button.setBounds(p1bounds.removeFromTop(40).reduced(30, 0));
 
     audio_player_2_load_button.setBounds(p2bounds.removeFromTop(30));
     position_2_slider.setBounds(p2bounds.removeFromTop(20));
-    audio_player_2_play_button.setBounds(p2bounds.removeFromTop(40).reduced(30, 0)); // Added Play button
+    audio_player_2_play_button.setBounds(p2bounds.removeFromTop(40).reduced(30, 0));
 
     audio_1_slider.setBounds(mixerBounds.removeFromLeft(80));
     audio_2_slider.setBounds(mixerBounds.removeFromRight(80));
@@ -87,7 +102,7 @@ void MixerViewComp::updateGains() {
 }
 
 void MixerViewComp::paint(juce::Graphics& g) {
-    g.fillAll(juce::Colour(0xff111c1c));
+    g.fillAll(juce::Colour::fromString("FF1F222A"));
 }
 
 void MixerViewComp::load(bool player) {

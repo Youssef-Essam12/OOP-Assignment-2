@@ -38,14 +38,16 @@ void LeftNavComp::resized() {
     }
 }
 
-void LeftNavComp::paint(juce::Graphics& g) {
-    // Draw the background rectangle for the left navigation area
-    g.setColour(juce::Colours::lightgrey.darker(0.8f)); // Dark background
-    g.fillRect(getLocalBounds());
+void LeftNavComp::paint(juce::Graphics& g)
+{
+    const juce::Colour surfaceColour = juce::Colour::fromString("FF1F222A");
+    const juce::Colour separatorColour = juce::Colour::fromString("FF33363D"); // A subtle, dark grey separator
 
-    // Optional: Draw a separator line on the right edge
-    g.setColour(juce::Colours::black);
-    g.drawRect(getLocalBounds().toFloat(), 1.0f);
+    g.fillAll(surfaceColour);
+    juce::Rectangle<int> bounds = getLocalBounds();
+    g.setColour(separatorColour);
+
+    g.fillRect(bounds.getRight() - 1, bounds.getY(), 1, bounds.getHeight());
 }
 
 

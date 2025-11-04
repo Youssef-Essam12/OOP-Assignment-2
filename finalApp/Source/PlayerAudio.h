@@ -61,10 +61,11 @@ public:
 
     int    getOriginalIndex() const;
     bool   isWokring() const;
+    bool isPlaying();
     int getAudioCount() const;
 
-    juce::String getTitle() const;
-    juce::String getArtist() const;
+    juce::String getTitle(int file_index) const;
+    juce::String getArtist(int file_index) const;
     const juce::File& getPlaylistFile(int index) const;
 
     bool isFileAlreadyLoaded(const juce::File& file);
