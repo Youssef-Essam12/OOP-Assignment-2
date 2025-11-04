@@ -35,30 +35,27 @@ public:
     void delete_button(int index);
     void remove_source();
 
-    // Merged filter updates with 0.0f default for neutral EQ
     void updateFilters(float lowGainDB = 0.0f, float midGainDB = 0.0f, float highGainDB = 0.0f);
 
-    // Merged reverb updates, prioritizing conservative defaults
     void updateReverb(float roomSize = 0.5f,
         float damping = 0.5f,
         float wetLevel = 0.0f,
         float dryLevel = 1.0f,
         float width = 1.0f);
 
-    // setter methods
     void setSpeed(float speed);
     void setPosition(double pos);
     void setGain(float gain);
     void setIndex(int index);
     void setOriginalIndex(int index);
 
-    // getter methods
     double getPosition() const;
     double getLength() const;
     double getOriginalLength() const;
     int    getIndex() const;
+    std::pair<double, double> getSegmentBounds();
+    bool isSegmentActive();
 
-    // New getters merged from the 'finalApp' branch
     int    getPlaylistSize() const;
     double getGain() const;
 
@@ -70,8 +67,10 @@ public:
     juce::String getArtist() const;
     const juce::File& getPlaylistFile(int index) const;
 
-    // Warnings
     bool isFileAlreadyLoaded(const juce::File& file);
+
+    static void set_last_played_audio_path(juce::String path);
+    static juce::String last_played_audio_path;
 
 private:
     juce::AudioFormatManager formatManager;

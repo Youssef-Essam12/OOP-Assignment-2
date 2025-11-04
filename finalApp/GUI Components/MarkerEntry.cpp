@@ -3,11 +3,12 @@
 MarkerEntry::MarkerEntry(const juce::String& t, const juce::String& a, int i, double marker_time)
     : title(t), timeText(a), index(i), time(marker_time)
 {
-    ++cnt;
     titleLabel.reset(new juce::Label("Title", title));
     titleLabel->setFont(juce::Font(16.0f, juce::Font::bold));
-    titleLabel->setColour(juce::Label::textColourId, juce::Colours::white); // Modern white text
+    titleLabel->setColour(juce::Label::textColourId, juce::Colours::white);
     titleLabel->setJustificationType(juce::Justification::centredLeft);
+
+    titleLabel->setEditable(false, true, false);
     titleLabel->setInterceptsMouseClicks(false, false);
     addAndMakeVisible(*titleLabel);
 
@@ -16,6 +17,7 @@ MarkerEntry::MarkerEntry(const juce::String& t, const juce::String& a, int i, do
     timeLabel->setColour(juce::Label::textColourId, juce::Colour(0xffaaaaaa)); // Slightly brighter muted text
     timeLabel->setJustificationType(juce::Justification::centredLeft);
     timeLabel->setInterceptsMouseClicks(false, false);
+    titleLabel->setAlwaysOnTop(1);
     addAndMakeVisible(*timeLabel);
 
     deleteButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xffc0392b)); // Modern Red (Alizarin Crimson)
@@ -29,7 +31,6 @@ MarkerEntry::MarkerEntry(const juce::String& t, const juce::String& a, int i, do
 
 MarkerEntry::~MarkerEntry()
 {
-    --cnt;
     deleteButton.removeListener(this);
 }
 
@@ -97,6 +98,11 @@ double MarkerEntry::get_pos()
     return time;
 }
 
+juce::String MarkerEntry::get_title()
+{
+    return title;
+}
+
 void MarkerEntry::buttonClicked(juce::Button* button)
 {
     if (button == &deleteButton) {
@@ -104,17 +110,27 @@ void MarkerEntry::buttonClicked(juce::Button* button)
     }
 }
 
+
 void MarkerEntry::mouseDown(const juce::MouseEvent& event)
 {
-    onClick(index);
+    if (titleLabel->getBounds().contains(event.getPosition()))
+    {
+        if (event.getNumberOfClicks() == 2)
+        {
+            titleLabel->showEditor();
+        }
+        else if (event.getNumberOfClicks() == 1)
+        {
+            juce::Timer::callAfterDelay(200, [this]()
+                {
+                    if (!titleLabel->isBeingEdited()) onClick(index);
+                });
+        }
+    }
+    else
+    {
+        onClick(index);
+    }
 }
 
-int MarkerEntry::get_marker_cnt()
-{
-    return cnt;
-}
 
-void MarkerEntry::set_marker_cnt(int i)
-{
-    cnt = i;
-}

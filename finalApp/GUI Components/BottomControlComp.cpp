@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <random>
 #include <numeric> // Added headers for shuffle functionality
+#include "BinaryData.h"
+
+bool BottomControlComp::markers_visible = 0;
 
 BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(audio_player) {
 
@@ -48,8 +51,8 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
     segmentSlider.setTextValueSuffix(" s");
 
     addAndMakeVisible(segmentSlider);
+    segmentSlider.setVisible(0);
 
-    // Button visibility and listeners (merged)
     addAndMakeVisible(forwardButton);
     addAndMakeVisible(backwardButton);
 
@@ -72,12 +75,10 @@ BottomControlComp::BottomControlComp(PlayerAudio& audio_player) : audio_player(a
 
     playPauseButton.setLookAndFeel(&pp_customlook);
 
-    // Position Slider value to text function fix
     positionSlider.textFromValueFunction = [&](double value) {
         std::string result = "";
 
-        int minutes = static_cast<int>(value) / 60;
-        // FIX: Cast value to int before subtraction to get correct seconds (from finalApp)
+        int minutes = static_cast<int>(value) / 60;        
         int seconds = static_cast<int>(value) - (minutes * 60);
 
         std::string seconds_string = std::to_string(seconds);
@@ -101,51 +102,81 @@ void BottomControlComp::add_marker(double pos)
     auto trackBounds = layout.sliderBounds;
 
     double markerOffset = (pos / audio_player.getOriginalLength()) * trackBounds.getWidth();
-
-    std::string marker_text = "Marker ";
-    // FIX: Corrected typo from MarkerEntry::get_marker_cnt() to Marker::get_Marker_cnt()
-    marker_text += std::to_string(Marker::get_Marker_cnt() - 1);
-
-    Marker* m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
-    markers.emplace_back(m);
-    addAndMakeVisible(m);
     bool visible = markerToggle.getToggleState();
-    m->setVisible(visible);
-    m->onClick = [this](double p) {
-        double ratio = p / audio_player.getOriginalLength();
-        double new_pos = ratio * audio_player.getLength();
-        audio_player.setPosition(new_pos);
-        };
-    juce::Label* label = new juce::Label();
-    label->setText(marker_text, juce::dontSendNotification);
-    label->setJustificationType(juce::Justification::centred);
-    label->setFont(juce::Font(10.0f, juce::Font::bold));
+
+    //std::string marker_text = "Marker ";
+    //marker_text += std::to_string(Marker::get_Marker_cnt() - 1);
+
+    //Marker* m = new Marker(positionSlider.getX() + trackBounds.getX() - 4, positionSlider.getY() + 10, markerOffset, pos, audio_player.getLength());
+    //markers.emplace_back(m);
+    //addAndMakeVisible(m);
+    //m->setVisible(visible);
+    //m->onClick = [this](double p) {
+    //    double ratio = p / audio_player.getOriginalLength();
+    //    double new_pos = ratio * audio_player.getLength();
+    //    audio_player.setPosition(new_pos);
+    //};
+    const auto* data = BinaryData::marker_png;
+    const int dataSize = BinaryData::marker_pngSize;
+    auto marker_icon = juce::ImageFileFormat::loadFrom(data, dataSize);
+
+    juce::ImageButton* marker_button = new juce::ImageButton;
+    marker_button->setImages(false, true, true,
+        marker_icon, 1.0f, juce::Colours::transparentWhite,
+        marker_icon, 1.0f, juce::Colours::transparentWhite,
+        marker_icon, 1.0f, juce::Colours::transparentWhite);
+    //label->setText(marker_text, juce::dontSendNotification);
+    //marker_button->setJustificationType(juce::Justification::centred);
+    /*label->setFont(juce::Font(10.0f, juce::Font::bold));
     label->setColour(juce::Label::textColourId, juce::Colours::white);
-    label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+    label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);*/
 
     int labelWidth = 50;
     int labelHeight = 15;
     int markerX = positionSlider.getX() + trackBounds.getX() - 4 + markerOffset;
     int markerY = positionSlider.getY() + 10;
-    label->setBounds(markerX - (labelWidth / 2) + 5, markerY - labelHeight - 2, labelWidth, labelHeight);
-    addAndMakeVisible(label);
-    label->setVisible(visible);
-    markersLabels.emplace_back(label);
+    marker_button->setBounds(markerX - (labelWidth / 2) + 5, markerY - labelHeight - 2, labelWidth, labelHeight);
+    addAndMakeVisible(marker_button);
+    marker_button->addListener(this);
+    marker_button->setVisible(visible);
+    markersImageButtons.emplace_back(marker_button);
+    marker_pos.push_back(pos);
     resized();
 }
 
 void BottomControlComp::clear_markers() {
-    for (auto* m : markers) {
-        removeChildComponent(m);
-        delete m;
-    }
-    markers.clear();
+    //for (auto* m : markers) {
+    //    removeChildComponent(m);
+    //    delete m;
+    //}
+    //markers.clear();
 
-    for (auto* l : markersLabels) {
-        removeChildComponent(l);
-        delete l;
+    for (auto* btn : markersImageButtons) {
+        removeChildComponent(btn);
+        delete btn;
     }
-    markersLabels.clear();
+    markersImageButtons.clear();
+}
+
+void BottomControlComp::delete_marker(int index)
+{
+    removeChildComponent(markersImageButtons[index]);
+    delete markersImageButtons[index];
+    markersImageButtons.erase(markersImageButtons.begin() + index);
+
+    marker_pos.erase(marker_pos.begin() + index);
+    resized();
+    repaint();
+}
+
+bool BottomControlComp::getMarkersVisible()
+{
+    return markers_visible;
+}
+
+void BottomControlComp::setMarkersVisible(bool visible)
+{
+    markers_visible = visible;
 }
 
 
@@ -157,6 +188,9 @@ void BottomControlComp::paint(juce::Graphics& g)
 void BottomControlComp::resized()
 {
     auto bounds = getLocalBounds().reduced(10);
+
+    segmentSlider.setBounds(bounds.removeFromTop(30));
+    bounds.removeFromTop(10);
 
     positionSlider.setBounds(bounds.removeFromTop(30));
     bounds.removeFromTop(10);
@@ -222,14 +256,10 @@ void BottomControlComp::resized()
 
     markerToggle.setBounds(
         shuffleToggle.getX() - 5 - markerToggleWidth, // 10px spacing
-        // FIX: Used markerToggleWidth for correct width
         controlsRow.getY(),
         markerToggleWidth,
         rowHeight
     );
-
-    // FIX: Set bounds for segmentSlider (from finalApp)
-    segmentSlider.setBounds(positionSlider.getBounds());
 }
 
 void BottomControlComp::buttonClicked(juce::Button* button)
@@ -256,7 +286,6 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     }
     else if (button == &shuffleToggle)
     {
-        // FIX: Implemented shuffle toggle logic (from finalApp)
         shuffleOn ^= 1;
         if (shuffleOn) {
             generateShuffleOrder();
@@ -265,7 +294,6 @@ void BottomControlComp::buttonClicked(juce::Button* button)
     else if (button == &abSegmentToggle)
     {
         bool toggleState = abSegmentToggle.getToggleState();
-        segmentBarVisible = toggleState;
         segmentSlider.setVisible(toggleState);
 
         if (toggleState)
@@ -291,9 +319,23 @@ void BottomControlComp::buttonClicked(juce::Button* button)
             added_markers = 1;
         }
         bool visible = markerToggle.getToggleState();
-        for (int i = 0; i < (int)markers.size(); i++) {
-            markers[i]->setVisible(visible);
-            markersLabels[i]->setVisible(visible);
+        BottomControlComp::setMarkersVisible(visible);
+        for (int i = 0; i < (int)markersImageButtons.size(); i++) {
+            markersImageButtons[i]->setVisible(visible);
+        }
+    }
+    else { // markerImageButtons
+        for (int i = 0; i < (int)markersImageButtons.size(); i++) {
+            if (button == markersImageButtons[i]) {
+                double ratio = marker_pos[i] / audio_player.getOriginalLength();
+                double new_pos = ratio * audio_player.getLength();
+                if (audio_player.isSegmentActive()) {
+                    auto segment_bounds = audio_player.getSegmentBounds();
+                    if (!(new_pos < segment_bounds.first || new_pos > segment_bounds.second)) audio_player.setPosition(new_pos);
+                }
+                else audio_player.setPosition(new_pos);
+                break;
+            }
         }
     }
 }

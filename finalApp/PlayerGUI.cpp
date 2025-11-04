@@ -13,13 +13,10 @@
 #include "GUI Components/MinimizedViewComp.h"
 #include "GUI Components/MixerViewComp.h"
 #include "Extra Functionalities/FloatingVolumeSlider.h"
-#include "Extra Functionalities/Marker.h"
-
-// The definition of a static member. Assuming Marker is the correct class name.
-int Marker::Marker_cnt = 1;
-
 
 // === PlayerGUI Constructor and Destructor ===
+
+juce::String PlayerAudio::last_played_audio_path = "";
 
 PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, PlayerAudio& mixer_player_2)
     : audio_player(audio_player),
@@ -78,8 +75,11 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
 
     markerView->add_marker_bottomBar = [&](double pos) {
         controlBar->add_marker(pos);
-        };
-
+    };
+    
+    markerView->delete_marker_bottomBar = [&](int index) {
+        controlBar->delete_marker(index);
+    };
     markerView->clear_markers_buttomBar = [&]() {
         controlBar->clear_markers();
         };
@@ -91,18 +91,17 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
         juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
 
         // Assuming Marker is the correct class name
-        juce::String title = "Marker " + juce::String(Marker::get_Marker_cnt());
-        markerView->add_markers_list_entry(title, timeText, Marker::get_Marker_cnt(), currentPosition);
+        juce::String title = "Marker " + juce::String(markerView->get_marker_cnt());
+        markerView->add_markers_list_entry(title, timeText, markerView->get_marker_cnt(), currentPosition);
         };
 
     controlBar->add_loaded_markers = [&]() {
         markerView->add_loaded_markers();
-        };
+    };
 
     // Initial setup
     startTimerHz(30);
 
-    // --- Load Session Logic FIX: Enclose in a scope to prevent C2362 errors ---
     {
         juce::File session_file("data.json");
         juce::var session;
@@ -110,7 +109,7 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
             juce::String json_data = session_file.loadFileAsString();
             session = juce::JSON::parse(json_data);
         }
-        else goto skip_loading; // Use goto for clean exit from loading logic
+        else return;
 
         if (session.isVoid()) goto skip_loading;
 
@@ -121,10 +120,10 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
             goto skip_loading;
 
         juce::Array<juce::var>* paths_from_json_file = session["playlist"].getArray();
-        if (paths_from_json_file == nullptr || paths_from_json_file->size() == 0) goto skip_loading; // Added size check
+        if (paths_from_json_file == nullptr) return;
 
-        // Error C2362 fix: these variables are now scoped and initialized within this block
         std::string last_played_path = session["last_audio_path"].toString().toStdString();
+        PlayerAudio::set_last_played_audio_path((juce::String)last_played_path);
 
         for (auto& path : *paths_from_json_file) {
             juce::File f = juce::File(path.toString());
@@ -132,7 +131,6 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
         }
         int last_played_index = (int)session["last_played_index"];
 
-        // Error C2362 fix: this variable is now scoped and initialized within this block
         juce::File file = juce::File((juce::String)last_played_path);
 
         if (file.existsAsFile()) {
@@ -147,12 +145,16 @@ PlayerGUI::PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, Pla
                 markerView->add_marker_pos((double)p);
             }
         }
-    } // End of session loading scope
+
+        juce::Array<juce::var>* markers_titles_from_json_file = session["marker_titles"].getArray();
+        if (markers_titles_from_json_file != nullptr) {
+            for (auto& t : *markers_titles_from_json_file) {
+                markerView->add_marker_title((juce::String)t.toString().toStdString());
+            }
+        }
+    }
 
 skip_loading:
-
-    // --- Initial Visibility/Setup ---
-    // Start listening to the parent component for minimized/maximized state
     if (auto* topLevel = getTopLevelComponent())
     {
         topLevel->addComponentListener(this);
@@ -179,15 +181,12 @@ PlayerGUI::~PlayerGUI()
         topLevel->removeComponentListener(this);
     }
 
-    // --- Save Session Logic ---
     juce::DynamicObject* session = new juce::DynamicObject();
 
     int current_audio_playing = audio_player.getIndex();
 
-    if (current_audio_playing != -1) // Use != -1 instead of ~ (bitwise NOT)
+    if (~current_audio_playing)
     {
-        // FIX: Reverting to the logic that calls get_playlist_path, 
-        // assuming it exists in PlaylistViewComp.
         session->setProperty("last_audio_path", juce::String(playlistView->get_playlist_path(current_audio_playing)));
     }
     session->setProperty("last_played_index", current_audio_playing);
@@ -195,19 +194,23 @@ PlayerGUI::~PlayerGUI()
 
     juce::Array<juce::var> arr;
     for (int i = 0; i < audio_player.getAudioCount(); i++) {
-        // FIX: Reverting to the logic that calls get_playlist_path
         auto& path = playlistView->get_playlist_path(i);
         arr.add(juce::String(path));
     }
     session->setProperty("playlist", arr);
 
     arr.clear();
-    // Assuming Marker is the correct class name
-    for (int i = 0; i < Marker::get_Marker_cnt() - 1; i++) {
+
+    for (int i = 0; i < markerView->get_marker_cnt(); i++) {
         arr.add(markerView->get_marker_pos(i));
     }
     session->setProperty("markers", arr);
 
+    arr.clear();
+    for (int i = 0; i < markerView->get_marker_cnt(); i++) {
+        arr.add(markerView->get_marker_title(i));
+    }
+    session->setProperty("marker_titles", arr);
     juce::var session_json(session);
     juce::String jsonOutput = juce::JSON::toString(session_json, false);
     juce::File sessionFile("data.json");
@@ -245,7 +248,7 @@ void PlayerGUI::resized()
     // Define region sizes (using float multiplication for cleaner code)
     int topBarHeight = static_cast<int>(0.05 * getWidth());
     int leftBarWidth = static_cast<int>(0.1 * getWidth());
-    int bottomBarHeight = static_cast<int>(0.05 * getWidth());
+    int bottomBarHeight = static_cast<int>(0.08 * getWidth());
 
     // Place the fixed components
     navBar->setBounds(bounds.removeFromLeft(leftBarWidth));
@@ -293,7 +296,6 @@ void PlayerGUI::resized()
 
 void PlayerGUI::setView(View newView)
 {
-    // --- Step 1: Hide the OLD view ---
     switch (currentView)
     {
     case View::Normal:
@@ -381,8 +383,6 @@ void PlayerGUI::setView(View newView)
             break;
         }
     }
-
-    // --- Step 4: Final Update ---
     resized();
     repaint();
 }
@@ -392,16 +392,15 @@ void PlayerGUI::timerCallback()
 {
     if (audio_player.isWokring())
     {
-        // Update control bar (position/time)
         controlBar->update();
-
-        // Update normal view (waveform, track info)
-        normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
     }
-
-    // Update the mixer view if active
     if (currentView == View::Mixer && mixerView)
     {
         mixerView->updateGains();
+    }
+    if (audio_player.getOriginalIndex() != audio_player.getIndex()) {
+        normalView->update(audio_player.getPlaylistFile(audio_player.getIndex()));
+        markerView->update();
+        audio_player.setOriginalIndex(audio_player.getIndex());
     }
 }

@@ -2,8 +2,6 @@
 #include <JuceHeader.h>
 #include "MarkerComp.h"
 
-int MarkerEntry::cnt = 1;
-
 MarkerComp::MarkerComp(PlayerAudio& player) : audio_player(player) {
     marker_list_component = new juce::Component;
     markerlistViewport.setViewedComponent(marker_list_component, true);
@@ -18,11 +16,34 @@ MarkerComp::MarkerComp(PlayerAudio& player) : audio_player(player) {
     clearMarkersButton.setButtonText("Clear Markers");
     clearMarkersButton.addListener(this);
     addAndMakeVisible(clearMarkersButton);
-
+    create_header();
     display_markers_menu();
 }
 
 MarkerComp::~MarkerComp() {
+}
+
+void MarkerComp::create_header() {
+    // Create a component for the header
+    markerHeader = new juce::Component();
+
+    // Create labels for each column (Title and Time, matching MarkerEntry)
+    titleHeaderLabel = new juce::Label("titleHeaderLabel", "Title");
+    timeHeaderLabel = new juce::Label("timeHeaderLabel", "Time");
+
+    // Style the labels to match the theme
+    titleHeaderLabel->setFont(juce::Font(14.0f, juce::Font::bold));
+    titleHeaderLabel->setColour(juce::Label::textColourId, juce::Colour(0xffaaaaaa));
+    titleHeaderLabel->setJustificationType(juce::Justification::centredLeft);
+
+    timeHeaderLabel->setFont(juce::Font(14.0f, juce::Font::bold));
+    timeHeaderLabel->setColour(juce::Label::textColourId, juce::Colour(0xffaaaaaa));
+    timeHeaderLabel->setJustificationType(juce::Justification::centredLeft);
+
+    markerHeader->addAndMakeVisible(titleHeaderLabel);
+    markerHeader->addAndMakeVisible(timeHeaderLabel);
+
+    marker_list_component->addAndMakeVisible(markerHeader);
 }
 
 void MarkerComp::display_markers_menu() {
@@ -43,10 +64,15 @@ void MarkerComp::display_markers_menu() {
 }
 
 void MarkerComp::add_markers_list_entry(juce::String title, juce::String timeText, int i, double marker_time) {
-    MarkerEntry* newEntry = new MarkerEntry(title, timeText, i, marker_time);
+    MarkerEntry* newEntry = new MarkerEntry(title, timeText, i-1, marker_time);
+    markerList_entries.emplace_back(newEntry);
     newEntry->onClick = [this](int i) {
         double ratio = markerList_entries[i]->get_pos() / audio_player.getOriginalLength();
         double new_pos = ratio * audio_player.getLength();
+        if (audio_player.isSegmentActive()) {
+            auto segment_bounds = audio_player.getSegmentBounds();
+            if (new_pos < segment_bounds.first || new_pos > segment_bounds.second) return;
+        }
         audio_player.setPosition(new_pos);
     };
     newEntry->onDeleteClick = [this](int i) {
@@ -54,17 +80,18 @@ void MarkerComp::add_markers_list_entry(juce::String title, juce::String timeTex
     };
     marker_list_component->addAndMakeVisible(newEntry);
 
-    markerList_entries.emplace_back(newEntry);
     add_marker_bottomBar(marker_time);
     resized();
 }
 
 void MarkerComp::delete_marker(int index)
 {
+    this->marker_cnt--;
     marker_list_component->removeChildComponent(markerList_entries[index]);
     delete markerList_entries[index];
     markerList_entries.erase(markerList_entries.begin() + index);
     for (int i = 0; i < (int)markerList_entries.size(); i++) markerList_entries[i]->setIndex(i);
+    delete_marker_bottomBar(index);
     resized();
     repaint();
 }
@@ -74,23 +101,37 @@ void MarkerComp::add_marker_pos(double p)
     marker_pos.push_back(p);
 }
 
+void MarkerComp::add_marker_title(juce::String title)
+{
+    marker_titles.push_back(title);
+}
+
 double MarkerComp::get_marker_pos(int i)
 {
     return markerList_entries[i]->get_pos();
 }
 
+juce::String MarkerComp::get_marker_title(int i)
+{
+    return markerList_entries[i]->get_title();
+}
+
 void MarkerComp::add_loaded_markers()
 {
+    if (audio_player.getPlaylistFile(audio_player.getIndex()).getFullPathName() != PlayerAudio::last_played_audio_path) return;
     for (int i = 0; i < (int)marker_pos.size(); i++) {
+        ++marker_cnt;
         double currentPosition = marker_pos[i];
         int minutes = (int)currentPosition / 60;
         int seconds = (int)currentPosition % 60;
         juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
-        juce::String title = "Marker " + juce::String(MarkerEntry::get_marker_cnt());
+        //juce::String title = "Marker " + juce::String(marker_cnt);
+        juce::String title = marker_titles[i];
 
-        add_markers_list_entry(title, timeText, markerList_entries.size(), currentPosition);
+        add_markers_list_entry(title, timeText, marker_cnt, currentPosition);
     }
     marker_pos.clear();
+    marker_titles.clear();
 }
 
 void MarkerComp::clear_markers() {
@@ -99,47 +140,62 @@ void MarkerComp::clear_markers() {
         delete m;
     }
     markerList_entries.clear();
+    marker_cnt = 0;
     clear_markers_buttomBar();
     resized();
     repaint();
 }
 
+int MarkerComp::get_marker_cnt()
+{
+    return marker_cnt;
+}
+
+void MarkerComp::set_market_cnt(int cnt)
+{
+    marker_cnt = cnt;
+}
+
 void MarkerComp::resized() {
     const int margin = 10;
     const int buttonHeight = 40;
-    const int buttonSpacing = 10; // Use a more descriptive name for the margin between components
+    const int headerHeight = 30;
+    const int buttonSpacing = 10;
 
     auto bounds = getLocalBounds().reduced(margin);
 
-    // 1. Position the Add Marker button
-    // Take the top section for the button
     auto addMarkerButtonArea = bounds.removeFromTop(buttonHeight);
     addMarkerButton.setBounds(addMarkerButtonArea);
 
-    // Remove spacing below the Add Marker button
     bounds.removeFromTop(buttonSpacing);
 
-    // 2. Position the Clear Markers button
-    // Take the next section for the button
     auto clearMarkersButtonArea = bounds.removeFromTop(buttonHeight);
     clearMarkersButton.setBounds(clearMarkersButtonArea);
 
-    // Remove spacing below the Clear Markers button
     bounds.removeFromTop(buttonSpacing);
 
-    // 3. Set viewport bounds for the remaining area
     markerlistViewport.setBounds(bounds);
     markerlistViewport.setScrollBarsShown(true, false);
 
-    // 4. Calculate content size for marker list
     int contentWidth = bounds.getWidth();
-    int requiredHeight = (int)markerList_entries.size() * (buttonHeight + buttonSpacing) + buttonSpacing;
+    int requiredHeight = headerHeight + (int)markerList_entries.size() * (buttonHeight + buttonSpacing) + buttonSpacing;
     int contentHeight = std::max(bounds.getHeight(), requiredHeight);
     marker_list_component->setSize(contentWidth, contentHeight);
 
-    // 5. Position the MarkerEntry components inside the viewport's content component
     const int entryComponentWidth = contentWidth - (2 * margin);
-    int currentY = buttonSpacing;
+    markerHeader->setBounds(margin, 0, entryComponentWidth, headerHeight);
+
+    const int padding = 5;
+    const int deleteButtonWidth = 40;
+
+    int combinedContentWidth = entryComponentWidth - deleteButtonWidth - margin;
+    int titleWidth = (combinedContentWidth * 4) / 10;
+    int timeWidth = combinedContentWidth - titleWidth;
+
+    titleHeaderLabel->setBounds(0, 0, titleWidth, headerHeight);
+    timeHeaderLabel->setBounds(titleWidth, 0, timeWidth, headerHeight);
+
+    int currentY = headerHeight + buttonSpacing;
     for (int i = 0; i < markerList_entries.size(); ++i) {
         markerList_entries[i]->setBounds(margin,
             currentY,
@@ -149,25 +205,31 @@ void MarkerComp::resized() {
     }
 }
 
+
 void MarkerComp::paint(juce::Graphics& g) {
     g.fillAll(juce::Colour(0xff1c1c1c));
 }
 
 void MarkerComp::buttonClicked(juce::Button* button) {
     if (button == &addMarkerButton) {
-        if (audio_player.getIndex() == -1) return;
+        if (audio_player.getIndex() == -1 || !BottomControlComp::getMarkersVisible()) return;
         double currentPosition = audio_player.getPosition();
         double originalPosition = (currentPosition / audio_player.getLength()) * audio_player.getOriginalLength();
 
         int minutes = (int)originalPosition / 60;
         int seconds = (int)originalPosition % 60;
         juce::String timeText = juce::String::formatted("%02d:%02d", minutes, seconds);
-        juce::String title = "Marker " + juce::String(MarkerEntry::get_marker_cnt());
+        ++marker_cnt;
+        juce::String title = "Marker " + juce::String(marker_cnt);
 
-        add_markers_list_entry(title, timeText, markerList_entries.size(), originalPosition);
+        add_markers_list_entry(title, timeText, marker_cnt, originalPosition);
     }
     else if (button == &clearMarkersButton) {
         if (audio_player.getIndex() == -1) return;
         clear_markers();
     }
+}
+
+void MarkerComp::update() {
+    if (audio_player.getOriginalIndex() != audio_player.getIndex()) clear_markers();
 }

@@ -10,13 +10,33 @@ PlaylistViewComp::PlaylistViewComp(PlayerAudio& player) : audio_player(player) {
     playlistViewport.setAlwaysOnTop(true);
     playlistViewport.setScrollBarThickness(10);
     addAndMakeVisible(playlistViewport);
-
+    create_header();
     display_playlist_menu();
 }
 
 
 PlaylistViewComp::~PlaylistViewComp() {
 
+}
+
+void PlaylistViewComp::create_header() {
+    playlistHeader = new juce::Component();
+
+    titleLabel = new juce::Label("titleLabel", "Title");
+    authorLabel = new juce::Label("authorLabel", "Author");
+
+    auto styleLabel = [](juce::Label* label) {
+        label->setFont(juce::Font(14.0f, juce::Font::bold));
+        label->setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+        label->setJustificationType(juce::Justification::centredLeft);
+        };
+
+    styleLabel(titleLabel);
+    styleLabel(authorLabel);
+
+    playlistHeader->addAndMakeVisible(titleLabel);
+    playlistHeader->addAndMakeVisible(authorLabel);
+    playlist_component->addAndMakeVisible(playlistHeader);
 }
 
 void PlaylistViewComp::display_playlist_menu() {
@@ -99,8 +119,6 @@ void PlaylistViewComp::resized() {
     const int margin = 10;
     auto parentBounds = getLocalBounds();
 
-    // These local variables are not used for setting bounds of viewport, 
-    // but might be part of the initial state logic not shown.
     int panelWidth = parentBounds.getWidth();
     int panelHeight = parentBounds.getHeight();
 
@@ -110,16 +128,34 @@ void PlaylistViewComp::resized() {
     playlistViewport.setScrollBarsShown(true, false);
 
     int buttonHeight = 40;
+    int headerHeight = 30;
     int buttonMargin = 10;
 
     int contentWidth = viewportArea.getWidth();
 
-    int requiredHeight = (int)playlist_entries.size() * (buttonHeight + buttonMargin) + buttonMargin;
+    int requiredHeight = headerHeight + (int)playlist_entries.size() * (buttonHeight + buttonMargin) + buttonMargin;
     int contentHeight = std::max(viewportArea.getHeight(), requiredHeight);
 
     playlist_component->setSize(contentWidth, contentHeight);
     const int entryComponentWidth = contentWidth - (2 * margin);
-    int currentY = margin;
+
+    playlistHeader->setBounds(margin, 0, entryComponentWidth, headerHeight);
+
+    const int padding = 5;
+    const int deleteButtonWidth = 40;
+
+    auto headerContentArea = juce::Rectangle<int>(margin, padding,
+        entryComponentWidth - deleteButtonWidth - margin,
+        headerHeight - 2 * padding);
+
+    int combinedContentWidth = headerContentArea.getWidth();
+    int titleWidth = (combinedContentWidth * 4) / 10;
+    int authorWidth = combinedContentWidth - titleWidth;
+
+    titleLabel->setBounds(0, 0, titleWidth, headerHeight);
+    authorLabel->setBounds(titleWidth, 0, authorWidth, headerHeight);
+
+    int currentY = headerHeight + margin;
 
     for (int i = 0; i < playlist_entries.size(); ++i) {
 

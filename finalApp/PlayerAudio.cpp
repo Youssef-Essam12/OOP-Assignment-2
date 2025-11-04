@@ -133,6 +133,16 @@ int PlayerAudio::getIndex() const {
     return currently_loaded_audioFile_index;
 }
 
+std::pair<double, double> PlayerAudio::getSegmentBounds()
+{
+    return { loopStart, loopEnd };
+}
+
+bool PlayerAudio::isSegmentActive()
+{
+    return segmentLoopActive;
+}
+
 int PlayerAudio::getOriginalIndex() const
 {
     return this->original_loaded_audioFile_index;
@@ -323,6 +333,7 @@ void PlayerAudio::enableSegmentLoop(double start, double end)
 {
     loopStart = start;
     loopEnd = end;
+    if (this->getPosition() < loopStart) this->setPosition(loopStart);
     segmentLoopActive = (start != -1 && end > start);
 }
 
@@ -354,6 +365,11 @@ bool PlayerAudio::isFileAlreadyLoaded(const juce::File& file) {
         }
     }
     return false;
+}
+
+void PlayerAudio::set_last_played_audio_path(juce::String path)
+{
+    last_played_audio_path = path;
 }
 
 double PlayerAudio::getGain() const {

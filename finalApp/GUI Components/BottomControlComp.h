@@ -2,7 +2,6 @@
 #include <JuceHeader.h>
 #include "../PlayerAudio.h"
 #include "../Extra Functionalities/PlayPauseLook.h"
-#include "../Extra Functionalities/Marker.h"
 #include "MarkerComp.h"
 #include <functional>
 
@@ -31,6 +30,10 @@ public:
 
     void add_marker(double pos);
     void clear_markers();
+    void delete_marker(int index);
+
+    static bool getMarkersVisible();
+    static void setMarkersVisible(bool visible);
 
     std::function<void(double)> add_marker_in_markerView;
     std::function<void()> add_loaded_markers;
@@ -73,9 +76,10 @@ private:
     PlayPauseLook pp_customlook;
     juce::TextButton playPauseButton{ "" };
 
-    std::vector<Marker*> markers;
-    std::vector<juce::Label*> markersLabels;
-
+    //std::vector<Marker*> markers;
+    //std::vector<juce::Label*> markersLabels;
+    std::vector<juce::ImageButton*> markersImageButtons;
+    std::vector<double> marker_pos;
     bool added_markers = 0;
-    bool markers_visible = 0;
+    static bool markers_visible;
 };
