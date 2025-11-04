@@ -2,7 +2,6 @@
 #include <JuceHeader.h>
 #include "../PlayerAudio.h"
 #include "NormalViewComp.h"
-#include "../Extra Functionalities/Marker.h"
 #include "MarkerEntry.h"
 #include "BottomControlComp.h"
 

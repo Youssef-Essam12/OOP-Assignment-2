@@ -13,7 +13,6 @@
 #include "GUI Components/MinimizedViewComp.h"
 #include "GUI Components/MixerViewComp.h"
 #include "Extra Functionalities/FloatingVolumeSlider.h"
-#include "Extra Functionalities/Marker.h"
 
 // === PlayerGUI Constructor and Destructor ===
 
