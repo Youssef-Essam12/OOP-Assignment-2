@@ -15,7 +15,6 @@ public:
 
     void sliderValueChanged(juce::Slider* slider);
 
-
     void update(const juce::File& file);
 
 

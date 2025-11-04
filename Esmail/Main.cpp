@@ -22,7 +22,7 @@ public:
 private:
     // The main window of the app
     class MainWindow : public juce::DocumentWindow,
-        public juce::ComponentListener
+        public juce::ComponentListener // Added inheritance from finalApp
     {
     public:
         MainWindow(juce::String name)
@@ -31,29 +31,31 @@ private:
                 DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar(true);
-            
-            mainComponentPtr = new MainComponent();
+
+            mainComponentPtr = new MainComponent(); // Initialize pointer
 
             setContentOwned(mainComponentPtr, true); // MainComponent = our UI + logic
             centreWithSize(400, 200);
             setVisible(true);
-            addComponentListener(this);
-
+            addComponentListener(this); // Start listening to component events (from finalApp)
         }
 
         ~MainWindow() override
         {
-            removeComponentListener(this);
+            removeComponentListener(this); // Stop listening (from finalApp)
         }
 
+        // Implementation of juce::ComponentListener's virtual functions (from finalApp)
         void componentVisibilityChanged(juce::Component& component) override
         {
             if (&component == this)
             {
+                // Note: !isVisible() correctly checks for the minimized state
                 bool isMinimised = !isVisible();
 
                 if (mainComponentPtr != nullptr)
                 {
+                    // Access the PlayerGUI and notify it of the minimization state change
                     if (auto* gui = mainComponentPtr->getGUI())
                     {
                         gui->handleMinimisedStateChange(isMinimised);
@@ -64,14 +66,17 @@ private:
 
         void componentMovedOrResized(juce::Component& component, bool wasMoved, bool wasResized) override
         {
+            // Implementation for move/resize logic if needed, but empty here.
+            juce::ignoreUnused(component, wasMoved, wasResized);
         }
 
         void closeButtonPressed() override
         {
             juce::JUCEApplication::getInstance()->systemRequestedQuit();
         }
+
     private:
-        MainComponent* mainComponentPtr = nullptr;
+        MainComponent* mainComponentPtr = nullptr; // Pointer to MainComponent
     };
 
     std::unique_ptr<MainWindow> mainWindow;

@@ -4,8 +4,8 @@
 struct MetaDataWraper {
     juce::String title;
     juce::String artist;
-	MetaDataWraper(){
-        this->title  = "";
+    MetaDataWraper() {
+        this->title = "";
         this->artist = "";
     }
 };
@@ -35,7 +35,10 @@ public:
     void delete_button(int index);
     void remove_source();
 
+    // Merged filter updates with 0.0f default for neutral EQ
     void updateFilters(float lowGainDB = 0.0f, float midGainDB = 0.0f, float highGainDB = 0.0f);
+
+    // Merged reverb updates, prioritizing conservative defaults
     void updateReverb(float roomSize = 0.5f,
         float damping = 0.5f,
         float wetLevel = 0.0f,
@@ -52,16 +55,19 @@ public:
     // getter methods
     double getPosition() const;
     double getLength() const;
-	double getOriginalLength() const;
+    double getOriginalLength() const;
     int    getIndex() const;
+
+    // New getters merged from the 'finalApp' branch
     int    getPlaylistSize() const;
     double getGain() const;
-    int     getOriginalIndex() const;
+
+    int    getOriginalIndex() const;
     bool   isWokring() const;
     int getAudioCount() const;
-    
-    juce::String getTitle() const;
-    juce::String getArtist() const;
+
+    juce::String getTitle(int file_index) const;
+    juce::String getArtist(int file_index) const;
     const juce::File& getPlaylistFile(int index) const;
 
     // Warnings
@@ -81,7 +87,7 @@ private:
     float sample_rate = 0.0;
 
     bool is_looping = 0;
-    
+
     double loopStart = -1;
     double loopEnd = -1;
     bool segmentLoopActive = false;

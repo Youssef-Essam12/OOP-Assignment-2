@@ -17,7 +17,7 @@ public:
     void update(juce::File& file);
 
     void display_playlist_menu();
-    void add_playlist_entry(const juce::File& file);
+    void add_playlist_entry(const juce::File file);
     void delete_button(int index);
 
     void buttonClicked(juce::Button* button);
@@ -25,6 +25,7 @@ public:
     // talk to normal, player
     std::function<void(int index)> onAudioSelected;
 
+    std::string get_playlist_path(int index);
 private:
     PlayerAudio& audio_player;
     std::vector<juce::TextButton*> playlist_buttons;

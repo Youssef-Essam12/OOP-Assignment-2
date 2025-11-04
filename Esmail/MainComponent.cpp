@@ -1,11 +1,14 @@
-﻿#pragma once
+#include <JuceHeader.h>
 #include "MainComponent.h"
 
-MainComponent::MainComponent() : player(), gui(player, mixer_player_1, mixer_player_2) {
+
+MainComponent::MainComponent()
+    : player(),
+    gui(player, mixer_player_1, mixer_player_2) // Use the three-argument constructor
+{
     addAndMakeVisible(gui);
     setSize(500, 1080);
     setAudioChannels(0, 2);
-
 }
 
 MainComponent::~MainComponent()
@@ -16,11 +19,12 @@ MainComponent::~MainComponent()
 void MainComponent::prepareToPlay(int samplesPerBlockExpected, double sampleRate)
 {
     player.prepareToPlay(samplesPerBlockExpected, sampleRate);
+
+    // Mixer player preparation (from finalApp)
     mixer_player_1.prepareToPlay(samplesPerBlockExpected, sampleRate);
     mixer_player_2.prepareToPlay(samplesPerBlockExpected, sampleRate);
 
-
-    // prepare for mixing
+    // Prepare temporary buffer for mixing (from finalApp)
     tempBuffer.setSize(2, samplesPerBlockExpected);
 }
 
@@ -28,14 +32,16 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& buffer
 {
     bufferToFill.clearActiveBufferRegion();
 
-    if (current_audio_mode == AudioMode::Normal)
+    if (current_audio_mode == AudioMode::Normal) // Audio routing logic (from finalApp)
     {
         player.getNextAudioBlock(bufferToFill);
     }
     else if (current_audio_mode == AudioMode::Mixer)
     {
+        // Get audio from Player 1 directly into the main buffer
         mixer_player_1.getNextAudioBlock(bufferToFill);
 
+        // Get audio from Player 2 into the temp buffer
         tempBuffer.clear();
         juce::AudioSourceChannelInfo tempChannelInfo(&tempBuffer, 0, bufferToFill.numSamples);
 
@@ -45,10 +51,10 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& buffer
         for (int channel = 0; channel < bufferToFill.buffer->getNumChannels(); ++channel)
         {
             bufferToFill.buffer->addFrom(channel, bufferToFill.startSample, // Destination
-                tempBuffer,                        // Source
-                channel,                           // Source Channel
-                0,                                 // Source Start Sample
-                bufferToFill.numSamples);          // Num Samples
+                tempBuffer,                                              // Source
+                channel,                                                 // Source Channel
+                0,                                                       // Source Start Sample
+                bufferToFill.numSamples);                                // Num Samples
         }
     }
 }
@@ -56,9 +62,12 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& buffer
 void MainComponent::releaseResources()
 {
     player.releaseResources();
+    // Release mixer resources (from finalApp)
     mixer_player_1.releaseResources();
     mixer_player_2.releaseResources();
 }
+
+// New mixer-related public methods (from finalApp)
 
 void MainComponent::setAudioMode(AudioMode newMode)
 {
@@ -71,6 +80,13 @@ PlayerAudio* MainComponent::getPlayer(int index)
     if (index == 2) return &mixer_player_2;
     return &player; // Default to main player
 }
+
+PlayerGUI* MainComponent::getGUI() {
+    return &this->gui;
+}
+
+
+// Existing transport methods
 
 void MainComponent::start() {
     player.start();
@@ -115,8 +131,4 @@ void MainComponent::resized()
 
 void MainComponent::loop() {
     player.loop();
-}
-
-PlayerGUI* MainComponent::getGUI() {
-    return &this->gui;
 }

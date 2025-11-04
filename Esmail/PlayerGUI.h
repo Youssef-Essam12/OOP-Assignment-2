@@ -1,51 +1,58 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PlayerAudio.h"
-#include <functional>
+#include <functional> // Included from finalApp branch
 
-
-
+// Forward declarations
 class BottomControlComp;
 class LeftNavComp;
 class TopBarComp;
 class NormalViewComp;
 class PlaylistViewComp;
-class MinimizedViewComp;
+class EditorComp;
+class MarkerComp;
+
+// Components added in finalApp branch
+//class MinimizedViewComp;
 class MixerViewComp;
 class FloatingVolumeSlider;
 
 
-
+// Inherits juce::ComponentListener from finalApp branch
 class PlayerGUI : public juce::Component,
     public juce::Timer,
     public juce::ComponentListener
 {
 public:
-    
+
+    // Updated constructor to include mixer players
     PlayerGUI(PlayerAudio& audio_player, PlayerAudio& mixer_player_1, PlayerAudio& mixer_player_2);
     ~PlayerGUI();
 
+    // New public methods for minimization and mixer
     void handleMinimisedStateChange(bool isMinimised);
 
     void paint(juce::Graphics& g) override;
     void resized() override;
     void timerCallback() override;
-    
+
     double getMixPercentage();
 
-    enum class View { Normal, Playlist, Editor, Marker, Mixer, Minimized};
-
-    //std::function<PlayerAudio* (int player)> retreive_player;
+    // Updated View enum to include Minimized and Mixer
+    enum class View { Normal, Playlist, Editor, Marker, Mixer, Minimized };
 
 private:
     void setView(View newView);
-    
+
     PlayerAudio& audio_player;
 
+    // Added mixer player references
     PlayerAudio& mixer_player_1;
     PlayerAudio& mixer_player_2;
 
+    // Updated view order
     View viewArr[5] = { View::Normal, View::Playlist, View::Editor, View::Mixer, View::Marker };
+
     // Bar components
     std::unique_ptr<TopBarComp> topBar;
     std::unique_ptr<LeftNavComp> navBar;
@@ -54,184 +61,19 @@ private:
     // View components
     std::unique_ptr<NormalViewComp> normalView;
     std::unique_ptr<PlaylistViewComp> playlistView;
-    std::unique_ptr<MinimizedViewComp> miniView;
+    std::unique_ptr<EditorComp> editorView;
+    std::unique_ptr<MarkerComp> markerView;
+
+    // New view components
+    //std::unique_ptr<MinimizedViewComp> miniView;
     std::unique_ptr<MixerViewComp> mixerView;
-    
+
+    // Floating Volume Slider
     std::unique_ptr<FloatingVolumeSlider> volume_slider;
 
     View currentView = View::Normal;
 
+    bool markers_added = 0;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//class PlayerGUI : public juce::Component,
-//    public juce::Button::Listener,
-//    public juce::Slider::Listener,
-//    public juce::ChangeListener,
-//    public juce::ComponentListener,
-//    public juce::Timer {
-//public:
-//    PlayerGUI(PlayerAudio& audio_player);
-//    ~PlayerGUI();
-//
-//    void paint(juce::Graphics& g);
-//    void resized();
-//    void buttonClicked(juce::Button* button);
-//    void sliderValueChanged(juce::Slider* slider);
-//
-//    void timerCallback() override;
-//    void updateTrackInfo();
-//
-//    void changeListenerCallback(juce::ChangeBroadcaster* source);
-//    void display_playlist_menu();
-//    void add_playlist_entry(const juce::File& file);
-//    void delete_button(int index);
-//    void display_markers();
-//    void clear_markers();
-//    void add_marker(double pos);
-//    void display_markers_menu();
-//    void add_markers_list_entry(std::string text);
-//    void delete_marker(int index);
-//
-//private:
-//    //-------Global variables-------
-//    PlayerAudio& player;
-//    bool playlist_componenet_visible = true;
-//    std::vector<juce::TextButton*> playlist_buttons;
-//    std::vector<juce::TextButton*> playlist_delete_buttons;
-//    std::vector<juce::TextButton*> marker_buttons;
-//    std::vector<juce::TextButton*> marker_delete_buttons;
-//    std::vector<std::string> playlist_paths;
-//    std::vector<marker*> markers;
-//    std::vector<juce::Label*> markers_labels;
-//    std::vector<double> markers_pos;
-//    juce::Component playlist_component;
-//
-//    juce::Component markers_list_component;
-//    bool markers_list_visible = false;
-//
-//    // -------Buttons-------------
-//    
-//    juce::TextButton restartButton{ "Restart" };
-//    juce::TextButton stopButton{ "Stop" };
-//    juce::TextButton muteButton{ "Mute" };
-//    juce::TextButton playPauseButton{ "Play/Pause" };
-//    juce::TextButton toEnd{ "To End" };
-//    juce::TextButton toStart{ "To Start" };
-//    juce::TextButton loopButton{ "Loop" };
-//    juce::TextButton setAButton{ "Set A" };
-//    juce::TextButton setBButton{ "Set B" };
-//    juce::TextButton backward{ "-10s" };
-//    juce::TextButton forward{ "+10s" };
-//    juce::TextButton playlist_menu{ "Playlist" };
-//    juce::TextButton addMarker{ "Add Marker" };
-//    juce::TextButton displayMarkers{ "Toggle Markers" };
-//    juce::TextButton clearMarkers{ "Clear Markers" };
-//    juce::TextButton equalizerButton{ "Equalizer" };
-//    juce::TextButton reverbButton{ "Reverb" };
-//
-//    //----------Sliders-------------
-//    juce::Slider volumeSlider;
-//    juce::Slider speedSlider;
-//    juce::Slider positionSlider;
-//    juce::Slider low_eq, mid_eq, high_eq;
-//    juce::Slider reverbSlider;
-//    //----------Labels-------------
-//    juce::Label volumeLabel;
-//    juce::Label speedLabel;
-//    juce::Label titleLabel;
-//    juce::Label artistLabel;
-//    juce::Label lowLabel, midLabel, highLabel, reverbLabel;
-//
-//    std::unique_ptr<juce::FileChooser> fileChooser;
-//
-//    juce::AudioFormatManager formatManager;
-//    juce::AudioThumbnailCache thumbnailCache;
-//    juce::AudioThumbnail thumbnail;
-//    //------------Sizes-----------
-//    int panelWidth;
-//    int panelHeight;
-//
-//    bool markers_visible = 0;
-//    bool markers_added = 0;
-//
-//    float low_eq_value, mid_eq_value, high_eq_value;
-//
-//    int aIndex = -1;
-//    int bIndex = -1;
-//    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI);
-//};
-
-

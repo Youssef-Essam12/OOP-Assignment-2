@@ -1,6 +1,8 @@
-#pragma once
 #include <JuceHeader.h>
 #include "PlaylistViewComp.h"
+
+// Assuming playlist_componenet_visible is a private bool member of PlaylistViewComp
+// from a previous merge, and is used to track the visibility state.
 
 PlaylistViewComp::PlaylistViewComp(PlayerAudio& player) : audio_player(player) {
     playlist_component = new juce::Component;
@@ -24,41 +26,45 @@ void PlaylistViewComp::display_playlist_menu() {
 
     juce::Rectangle<int> targetBounds;
 
+    // Define the size of the animated panel
     int panelWidth = 50, panelHeight = 50;
-    if (playlist_componenet_visible)
+
+    if (playlist_componenet_visible) // Logic to determine target position (from finalApp)
     {
-        // Target is ON-screen
+        // Target is ON-screen (slide in)
         targetBounds = juce::Rectangle<int>(getWidth() - panelWidth, 0, panelWidth, panelHeight);
     }
     else
     {
-        // Target is OFF-screen (to the right)
+        // Target is OFF-screen (to the right, slide out)
         targetBounds = juce::Rectangle<int>(getWidth(), 0, panelWidth, panelHeight);
     }
 
     // Animate the component to the target bounds over 300ms
     animator.animateComponent(
-        &playlistViewport,  // Component to animate
-        targetBounds,         // Target position and size
-        1.0f,                 // Target opacity (1.0 = fully visible)
-        300,                  // Time in milliseconds
-        false,                // Use an ease-out curve
-        0.0,                  // Start velocity
-        0.0                   // End velocity
+        &playlistViewport,      // Component to animate
+        targetBounds,           // Target position and size
+        1.0f,                   // Target opacity (1.0 = fully visible)
+        300,                    // Time in milliseconds
+        false,                  // Use an ease-out curve
+        0.0,                    // Start velocity
+        0.0                     // End velocity
     );
 }
 
-void PlaylistViewComp::add_playlist_entry(const juce::File& file) {
-    juce::String fileName = file.getFileNameWithoutExtension();
+void PlaylistViewComp::add_playlist_entry(const juce::File file) {
+    
+    int file_index = audio_player.getPlaylistSize()-1;
+    
 
-    PlaylistEntry* newEntry = new PlaylistEntry(fileName, "Esmail", audio_player.getAudioCount()-1);
+    PlaylistEntry* newEntry = new PlaylistEntry(audio_player.getTitle(file_index), audio_player.getArtist(file_index), audio_player.getAudioCount() - 1);
     newEntry->onClick = [&](int i) {
         this->onAudioSelected(i);
-    };
+        };
 
     newEntry->onDeleteClick = [&](int i) {
         delete_button(i);
-    };
+        };
 
     playlist_component->addAndMakeVisible(newEntry);
     playlist_entries.emplace_back(newEntry);
@@ -95,6 +101,8 @@ void PlaylistViewComp::resized() {
     const int margin = 10;
     auto parentBounds = getLocalBounds();
 
+    // These local variables are not used for setting bounds of viewport, 
+    // but might be part of the initial state logic not shown.
     int panelWidth = parentBounds.getWidth();
     int panelHeight = parentBounds.getHeight();
 
@@ -132,5 +140,10 @@ void PlaylistViewComp::paint(juce::Graphics& g) {
 
 
 void PlaylistViewComp::buttonClicked(juce::Button* button) {
+    juce::ignoreUnused(button);
+}
 
+std::string PlaylistViewComp::get_playlist_path(int index)
+{
+    return playlist_paths[index];
 }
