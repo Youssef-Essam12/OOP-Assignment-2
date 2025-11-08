@@ -7,10 +7,10 @@ can mix and play two audio tracks simultaneously.
 
 
 # Technologies used
-(C++ 17)
-  ○ Underlying programming language for all logic.
-JUCE Framework
-  ○ Comprehensive library for Audio I/O, GUI, and more
+  - (C++ 17)
+    - Underlying programming language for all logic.
+  - JUCE Framework
+    - Comprehensive library for Audio I/O, GUI, and more
 
 # Work Breakdown
 - Mariam Azzam:
@@ -36,5 +36,5 @@ JUCE Framework
     ● Markers are displayed visually on the position bar.
     ● User can delete a single marker or clear all markers.
     ● Markers’ names can be changed.
-- Innovations:
-● Equalizer & Reverb
+  - Innovations:
+    ● Equalizer & Reverb
