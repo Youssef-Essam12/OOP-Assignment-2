@@ -13,11 +13,11 @@ JUCE Framework
   ○ Comprehensive library for Audio I/O, GUI, and more
 
 # Work Breakdown
-● Mariam Azzam:
+- Mariam Azzam:
   - Looping Button
   - Position Slider
   - A-B (Segment) Looping implementation & Slider
-● Muhammed Ahmed Esmail:
+- Muhammed Ahmed Esmail:
   - Program Structure and GUI front end design
   - Two Players & Mixer
   - Metadata Display
@@ -27,7 +27,7 @@ JUCE Framework
     ● Mixer View
   - Some extra innovations:
     ● The Shuffle Feature
-● Youssef Essam:
+- Youssef Essam:
   - Mute Button
   - Speed Slider
   - Save & Load Last Session Function
@@ -35,6 +35,6 @@ JUCE Framework
     ● Add markers at specific positions.
     ● Markers are displayed visually on the position bar.
     ● User can delete a single marker or clear all markers.
-● Markers’ names can be changed.
+    ● Markers’ names can be changed.
 - Innovations:
 ● Equalizer & Reverb
